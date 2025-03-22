@@ -172,7 +172,7 @@ with gr.Blocks(theme="base",
 
 demo.launch(
     # server_name="0.0.0.0",
-    server_port=8501,
+    # server_port=8501,
     favicon_path=get_my_path("data/logo2.ico"),
     max_file_size="5kb",
     show_api=False,
