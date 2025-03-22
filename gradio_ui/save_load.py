@@ -10,6 +10,7 @@ import time
 
 load_data = []
 
+
 def save_options(*args):
     """ 保存配置文件 """
     random_id = uuid.uuid4()
@@ -17,9 +18,9 @@ def save_options(*args):
     formatted_date = now.strftime("%Y-%m-%d")
     job_now = args[0]
 
-    save_dir = f"tmp_saves/{random_id}"
-    os.mkdir(save_dir)
-    save_path = f"tmp_saves/{random_id}/{job_now}{formatted_date}.txt"
+    save_dir = os.path.join("dnre_saves", str(random_id))
+    os.makedirs(save_dir, exist_ok=True)
+    save_path = os.path.join(save_dir, f"{job_now}{formatted_date}.txt")
 
     with open(save_path, "w", encoding='utf-8') as f_w:
         f_w.write(str(args))
