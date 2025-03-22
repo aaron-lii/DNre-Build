@@ -21,7 +21,7 @@ def save_options(*args):
     os.mkdir(save_dir)
     save_path = f"tmp_saves/{random_id}/{job_now}{formatted_date}.txt"
 
-    with open(save_path, "w") as f_w:
+    with open(save_path, "w", encoding='utf-8') as f_w:
         f_w.write(str(args))
 
     return save_path
@@ -34,7 +34,7 @@ def load_options(input_file_path):
         raise gr.Error("未上传配置文件")
     print(input_file_path)
     load_data = []
-    with open(input_file_path, "r") as f_r:
+    with open(input_file_path, "r", encoding='utf-8') as f_r:
         for line in f_r.readlines():
             try:
                 load_data = eval(line.strip())
