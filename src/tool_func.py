@@ -5,6 +5,7 @@ import sys
 import os
 import logging
 
+logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 console_handler = logging.StreamHandler()
