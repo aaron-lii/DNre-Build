@@ -1,6 +1,7 @@
 """
 页面
 """
+print("DNre配装器启动中...")
 import os
 import gradio as gr
 import warnings
