@@ -3,26 +3,27 @@
 """
 import json
 import copy
-from src.tool_func import job_info_dict, job_info_dict2, add_dicts
+
+from src.tool_func import job_info_dict, job_info_dict2, add_dicts, get_my_path
 
 
 # 加载数据
-with open('data/equipment_base.json', 'r', encoding='utf-8') as file:
+with open(get_my_path('data/equipment_base.json'), 'r', encoding='utf-8') as file:
     equipment_base_json = json.load(file)
-with open('data/equipment_suffix.json', 'r', encoding='utf-8') as file:
+with open(get_my_path('data/equipment_suffix.json'), 'r', encoding='utf-8') as file:
     equipment_suffix_json = json.load(file)
-with open('data/equipment_group.json', 'r', encoding='utf-8') as file:
+with open(get_my_path('data/equipment_group.json'), 'r', encoding='utf-8') as file:
     equipment_group_json = json.load(file)
-with open('data/equipment_grade.json', 'r', encoding='utf-8') as file:
+with open(get_my_path('data/equipment_grade.json'), 'r', encoding='utf-8') as file:
     equipment_grade_json = json.load(file)
-with open('data/equipment_enchant.json', 'r', encoding='utf-8') as file:
+with open(get_my_path('data/equipment_enchant.json'), 'r', encoding='utf-8') as file:
     equipment_enchant_json = json.load(file)
     enchant_json = {}
     for key, val in equipment_enchant_json.items():
         for key2, val2 in val.items():
             enchant_json[key2] = val2
     del equipment_enchant_json
-with open('data/jewelry.json', 'r', encoding='utf-8') as file:
+with open(get_my_path('data/jewelry.json'), 'r', encoding='utf-8') as file:
     jewelry_json = json.load(file)
 
 

@@ -3,10 +3,12 @@
 """
 
 import json
-from src.tool_func import add_dicts
+
+from src.tool_func import add_dicts, get_my_path
+
 
 # 加载数据
-with open('data/surplus.json', 'r', encoding='utf-8') as file:
+with open(get_my_path('data/surplus.json'), 'r', encoding='utf-8') as file:
     surplus_json = json.load(file)
 
 

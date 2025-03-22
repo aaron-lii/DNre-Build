@@ -4,12 +4,14 @@ equipment
 import json
 import gradio as gr
 
+from src.tool_func import get_my_path
+
 
 def get_base_data():
     """ 获取base数据 """
     base_dict = {}
     # 打开 JSON 文件
-    with open('data/equipment_base.json', 'r', encoding='utf-8') as file:
+    with open(get_my_path('data/equipment_base.json'), 'r', encoding='utf-8') as file:
         data = json.load(file)
         for job, val in data.items():
             if job not in base_dict:
@@ -29,7 +31,7 @@ def get_jewelry_data():
     """ 获取jewelry数据 """
     jewelry_dict = {}
     # 打开 JSON 文件
-    with open('data/jewelry.json', 'r', encoding='utf-8') as file:
+    with open(get_my_path('data/jewelry.json'), 'r', encoding='utf-8') as file:
         data = json.load(file)
         for part, val1 in data.items():
             if part not in jewelry_dict:
@@ -53,7 +55,7 @@ jewelry_dict = get_jewelry_data()
 def get_enchant_data():
     """ 获取enchant数据 """
     enchant_dict = {}
-    with open('data/equipment_enchant.json', 'r', encoding='utf-8') as file:
+    with open(get_my_path('data/equipment_enchant.json'), 'r', encoding='utf-8') as file:
         data = json.load(file)
         for type1, val1 in data.items():
             if type1 not in enchant_dict:
@@ -67,7 +69,7 @@ def get_enchant_data():
 def get_suffix_data():
     """ 获取suffix数据 """
     suffix_dict = {}
-    with open('data/equipment_suffix.json', 'r', encoding='utf-8') as file:
+    with open(get_my_path('data/equipment_suffix.json'), 'r', encoding='utf-8') as file:
         data = json.load(file)
 
     for part, val in equipment_base_dict["战士"].items():

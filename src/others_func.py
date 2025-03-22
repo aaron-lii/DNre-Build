@@ -3,15 +3,16 @@
 """
 
 import json
-from src.tool_func import job_info_dict, add_dicts
+
+from src.tool_func import add_dicts, get_my_path
 
 
 # 加载数据
-with open('data/appellation.json', 'r', encoding='utf-8') as file:
+with open(get_my_path('data/appellation.json'), 'r', encoding='utf-8') as file:
     appellation_json = json.load(file)
-with open('data/collection.json', 'r', encoding='utf-8') as file:
+with open(get_my_path('data/collection.json'), 'r', encoding='utf-8') as file:
     collection_json = json.load(file)
-with open('data/skill.json', 'r', encoding='utf-8') as file:
+with open(get_my_path('data/skill.json'), 'r', encoding='utf-8') as file:
     skill_json = json.load(file)
 
 

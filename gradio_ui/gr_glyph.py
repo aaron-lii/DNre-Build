@@ -5,6 +5,8 @@
 import gradio as gr
 import json
 
+from src.tool_func import get_my_path
+
 
 def get_glyph_data():
     """ 获取纹章数据 """
@@ -13,7 +15,7 @@ def get_glyph_data():
 
     glyph_base_tmp = []
     # 打开 JSON 文件
-    with open('data/glyph.json', 'r', encoding='utf-8') as file:
+    with open(get_my_path('data/glyph.json'), 'r', encoding='utf-8') as file:
         data = json.load(file)
         for lev, em_dic in data["base"].items():
             for em_name, val in em_dic.items():

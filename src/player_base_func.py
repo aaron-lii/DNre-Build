@@ -3,9 +3,10 @@
 """
 import json
 import gradio as gr
-from src.tool_func import job_info_dict2
 
-with open('data/player_base.json', 'r', encoding='utf-8') as file:
+from src.tool_func import job_info_dict2, get_my_path
+
+with open(get_my_path('data/player_base.json'), 'r', encoding='utf-8') as file:
     player_base_state_json = json.load(file)
 
 

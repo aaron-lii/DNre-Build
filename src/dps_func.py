@@ -3,11 +3,13 @@
 """
 
 import json
+
 from src.percent_calculate import calculate_critical_percent
+from src.tool_func import get_my_path
 
 
 # 加载数据
-with open('data/boss.json', 'r', encoding='utf-8') as file:
+with open(get_my_path('data/boss.json'), 'r', encoding='utf-8') as file:
     boss_json = json.load(file)
 
 

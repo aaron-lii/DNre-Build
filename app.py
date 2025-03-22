@@ -16,8 +16,8 @@ from gradio_ui.gr_surplus_level import create_surplus_level_tab
 from gradio_ui.gr_others import create_others_tab, update_skill_options
 from gradio_ui.save_load import save_options, load_options, load_options2
 from gradio_ui.gr_dps import create_dps_tab, update_dps_options
-
 from src.main_calculate import main_func
+from src.tool_func import get_my_path
 
 # 捕获并忽略 "not in the list of choices" 警告
 warnings.filterwarnings("ignore", message=".*not in the list of choices.*", category=UserWarning)
@@ -172,7 +172,7 @@ with gr.Blocks(theme="base",
 demo.launch(
     # server_name="0.0.0.0",
     server_port=7866,
-    favicon_path="data/logo2.ico",
+    favicon_path=get_my_path("data/logo2.ico"),
     max_file_size="5kb",
     show_api=False,
     share=False,

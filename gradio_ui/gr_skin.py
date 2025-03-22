@@ -5,6 +5,8 @@ skin页
 import gradio as gr
 import json
 
+from src.tool_func import get_my_path
+
 
 def get_skin_data():
     """ 获取时装数据 """
@@ -18,7 +20,7 @@ def get_skin_data():
     ring_skin_list = ["无"]
 
     # 打开 JSON 文件
-    with open('data/skin.json', 'r', encoding='utf-8') as file:
+    with open(get_my_path('data/skin.json'), 'r', encoding='utf-8') as file:
         data = json.load(file)
         for key, val in data["weapon1_skin"].items():
             weapon1_skin_list.append(key)

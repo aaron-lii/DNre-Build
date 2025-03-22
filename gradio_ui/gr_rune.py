@@ -5,9 +5,11 @@
 import gradio as gr
 import json
 
+from src.tool_func import get_my_path
+
 
 # 打开 JSON 文件
-with open('data/rune.json', 'r', encoding='utf-8') as file:
+with open(get_my_path('data/rune.json'), 'r', encoding='utf-8') as file:
     rune_json = json.load(file)
 
 

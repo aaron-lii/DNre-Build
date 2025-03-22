@@ -4,17 +4,19 @@
 import json
 import gradio as gr
 
+from src.tool_func import get_my_path
+
 
 def get_appellation_data():
     """ 获取appellation数据 """
-    with open('data/appellation.json', 'r', encoding='utf-8') as file:
+    with open(get_my_path('data/appellation.json'), 'r', encoding='utf-8') as file:
         appellation_dict = json.load(file)
     return appellation_dict
 
 
 def get_skill_data():
     """ 获取skill数据 """
-    with open('data/skill.json', 'r', encoding='utf-8') as file:
+    with open(get_my_path('data/skill.json'), 'r', encoding='utf-8') as file:
         skill_dict = json.load(file)
     return skill_dict
 
