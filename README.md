@@ -2,7 +2,7 @@
 <h1>DNre-Build</h1>
 DN怀旧服配装模拟器<br><br>
 
-![DNre-Build](data/logo2.ico)
+![DNre-Build](https://github.com/aaron-lii/DNre-Build/raw/main/data/logo2.ico)
 </div>
 
 ## 简介
