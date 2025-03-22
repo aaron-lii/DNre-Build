@@ -8,7 +8,6 @@ import gradio as gr
 def create_main_tab():
     with gr.Tab("主页"):
         text_info = """
-        <span style="color:red; font-weight:bold;">内测中，随时可能因为作者更新而暂时打不开页面</span>
         ### 使用说明
         1. 在本页面选择角色职业
         2. 在装备页、纹章页、石板页、时装页、综合等级页、其他属性页面选择对应装备

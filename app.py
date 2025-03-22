@@ -130,15 +130,15 @@ with gr.Blocks(theme="base",
     gr.Markdown("### 战力计算结果")
     with gr.Row():
         dps_text = gr.Text("一刀秒了！", label="当前配装的战斗力")
-        dps_increase_plot = gr.BarPlot(x="属性", y="收益率", title="三属性板子和石板攻击属性收益率",
+        dps_increase_plot = gr.BarPlot(x="属性", y="收益率", title="三属性纹章和石板攻击属性收益率",
                                        sort="-y", height=300, bar_width=0.5, x_label_angle=45)
     with gr.Row():
         def_text = gr.Text("神操，不会中技能！", label="当前配装的物防生存力")
-        def_increase_plot = gr.BarPlot(x="属性", y="收益率", title="三属性板子和石板物防属性收益率",
+        def_increase_plot = gr.BarPlot(x="属性", y="收益率", title="三属性纹章和石板物防属性收益率",
                                        sort="-y", height=300, bar_width=0.5, x_label_angle=45)
     with gr.Row():
         magic_def_text = gr.Text("神操，不会中技能！", label="当前配装的魔防生存力")
-        magic_def_increase_plot = gr.BarPlot(x="属性", y="收益率", title="三属性板子和石板魔防属性收益率",
+        magic_def_increase_plot = gr.BarPlot(x="属性", y="收益率", title="三属性纹章和石板魔防属性收益率",
                                              sort="-y", height=300, bar_width=0.5, x_label_angle=45)
     gr.Markdown("---")
     gr.Markdown("### 面板计算结果")
