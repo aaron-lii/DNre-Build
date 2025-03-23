@@ -30,7 +30,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='DNre配装器v0.2',
+    name='DNre配装器v0.3',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

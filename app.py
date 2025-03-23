@@ -56,7 +56,7 @@ def logo():
                        alt="logo",
                        width=42,
                        height=42)
-            ms.Span("DN怀旧服 50级配装模拟器v0.2")
+            ms.Span("DN怀旧服 50级配装模拟器v0.3")
 
 
 # 自定义 CSS，隐藏默认页脚并添加新的透明背景页脚样式
