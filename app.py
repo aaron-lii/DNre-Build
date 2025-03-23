@@ -1,7 +1,6 @@
 """
 页面
 """
-print("DNre配装器启动中...")
 import os
 import gradio as gr
 import warnings
@@ -170,12 +169,10 @@ with gr.Blocks(theme="base",
 
     demo.add(gr.HTML(custom_html))
 
-print("\n\n如果配装器网页没有自动弹出，请手动打开网页: http://127.0.0.1:7866\n"
-      "配装器使用过程中请勿关闭此窗口！\n\n")
 
 demo.launch(
     # server_name="0.0.0.0",
-    server_port=7866,
+    # server_port=8501,
     favicon_path=get_my_path("data/logo2.ico"),
     max_file_size="5kb",
     show_api=False,

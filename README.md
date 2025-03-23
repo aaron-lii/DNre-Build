@@ -13,7 +13,7 @@ DN怀旧服配装模拟器<br><br>
 
 ## 开发者使用说明
 1. 安装依赖`pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/`
-2. 运行`python app.py`，正常情况下会自动打开配装器网页，没有的话就浏览器手动打开网址`http://127.0.0.1:7866`
+2. 运行`python app_local.py`，正常情况下会自动打开配装器网页，没有的话就浏览器手动打开网址`http://127.0.0.1:7866`
 
 ## TODO
 1. 回蓝眩晕硬直面板计算异常

@@ -9,7 +9,7 @@ datas += collect_data_files('groovy')
 datas += collect_data_files('modelscope_studio')
 
 a = Analysis(
-    ['app.py', 'gradio_ui\gr_dps.py', 'gradio_ui\gr_equipment.py', 'gradio_ui\gr_glyph.py', 'gradio_ui\gr_main.py', 'gradio_ui\gr_others.py', 'gradio_ui\gr_rune.py', 'gradio_ui\gr_skin.py', 'gradio_ui\gr_surplus_level.py', 'gradio_ui\gr_warning_check.py', 'gradio_ui\save_load.py', 'src\dps_func.py', 'src\equipment_func.py', 'src\glyph_func.py', 'src\main_calculate.py', 'src\others_func.py', 'src\percent_calculate.py', 'src\player_base_func.py', 'src\\rune_func.py', 'src\skin_func.py', 'src\surplus_func.py', 'src\\tool_func.py'],
+    ['app_local.py', 'gradio_ui\gr_dps.py', 'gradio_ui\gr_equipment.py', 'gradio_ui\gr_glyph.py', 'gradio_ui\gr_main.py', 'gradio_ui\gr_others.py', 'gradio_ui\gr_rune.py', 'gradio_ui\gr_skin.py', 'gradio_ui\gr_surplus_level.py', 'gradio_ui\gr_warning_check.py', 'gradio_ui\save_load.py', 'src\dps_func.py', 'src\equipment_func.py', 'src\glyph_func.py', 'src\main_calculate.py', 'src\others_func.py', 'src\percent_calculate.py', 'src\player_base_func.py', 'src\\rune_func.py', 'src\skin_func.py', 'src\surplus_func.py', 'src\\tool_func.py'],
     pathex=[],
     binaries=[],
     datas=datas,
