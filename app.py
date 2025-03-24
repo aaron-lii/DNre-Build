@@ -1,6 +1,7 @@
 """
 页面
 """
+print("DNre配装器启动中...")
 import os
 import gradio as gr
 import warnings
@@ -17,7 +18,7 @@ from gradio_ui.gr_others import create_others_tab, update_skill_options
 from gradio_ui.save_load import save_options, load_options, load_options2
 from gradio_ui.gr_dps import create_dps_tab, update_dps_options
 from src.main_calculate import main_func
-from src.tool_func import get_my_path
+from src.tool_func import get_my_path, version, env_now
 
 # 捕获并忽略 "not in the list of choices" 警告
 warnings.filterwarnings("ignore", message=".*not in the list of choices.*", category=UserWarning)
@@ -56,7 +57,7 @@ def logo():
                        alt="logo",
                        width=42,
                        height=42)
-            ms.Span("DN怀旧服 50级配装模拟器v0.3")
+            ms.Span(f"DN怀旧服 50级配装模拟器{version}")
 
 
 # 自定义 CSS，隐藏默认页脚并添加新的透明背景页脚样式
@@ -169,10 +170,16 @@ with gr.Blocks(theme="base",
 
     demo.add(gr.HTML(custom_html))
 
+if env_now == "exe":
+    port_now = 7866
+    print(f"\n\n如果配装器网页没有自动弹出，请手动打开网页: http://127.0.0.1:{port_now}\n"
+          "配装器使用过程中请勿关闭此窗口！\n\n")
+else:
+    port_now = None
 
 demo.launch(
     # server_name="0.0.0.0",
-    # server_port=8501,
+    server_port=port_now,
     favicon_path=get_my_path("data/logo2.ico"),
     max_file_size="5kb",
     show_api=False,

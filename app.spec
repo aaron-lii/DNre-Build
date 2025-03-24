@@ -1,5 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_data_files
+from src.tool_func import version
 
 datas = [('data', 'data')]
 datas += collect_data_files('gradio_client')
@@ -30,7 +31,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='DNre配装器v0.3',
+    name=f'DNre配装器{version}',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

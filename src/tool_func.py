@@ -4,6 +4,7 @@
 import sys
 import os
 import logging
+import requests
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger()
@@ -27,8 +28,19 @@ job_info_dict2 = {"剑皇": "剑圣", "月之领主": "剑圣", "狂战士": "�
                   "重炮手": "工程", "机械大师": "工程", "炼金圣士": "炼金", "药剂师": "炼金"}
 
 
-def get_my_path(input_path):
+def get_env():
+    """ 判断当前运行环境 """
     if getattr(sys, 'frozen', False):
+        # 如果是打包后的程序
+        return "exe"
+    else:
+        return "py"
+
+
+def get_my_path(input_path):
+    """ 根据运行环境修改相对路径 """
+    env_now = get_env()
+    if env_now == "exe":
         # 如果是打包后的程序
         base_path = sys._MEIPASS
     else:
@@ -58,3 +70,46 @@ def add_dicts(dict_lists: list[dict]):
                     res_dict[key] = int(val)
 
     return res_dict
+
+
+def get_version():
+    """ 获取本地版本号 """
+    version_now = ""
+    data_version_now = ""
+    try:
+        with open(get_my_path("update_logs.txt"), "r") as f_r:
+            line_all = f_r.readlines()
+            version_now = line_all[0].strip().split(": ", 1)[1]
+            data_version_now = line_all[1].strip().split(": ", 1)[1]
+    except Exception as e:
+        logger.warning("本地版本号获取失败")
+
+    return version_now, data_version_now
+
+
+def get_remote_version(local_version):
+    """ 获取最新版本号 """
+    url = "https://www.modelscope.cn/studio/aaronL/DNre-Build/resolve/master/update_logs.txt"
+
+    try:
+        response = requests.get(url, timeout=5)
+        res_text = response.text
+        remote_version = res_text.split("\n", 1)[0].split(": ", 1)[1]
+        if remote_version == local_version:
+            res_info = local_version + "  已是最新版"
+        else:
+            res_info = remote_version + \
+                       '  <span style="color:red; font-weight:bold;">有更新！</span>'
+    except Exception as e:
+        logger.warning("最新版本号获取失败")
+        res_info = "最新版本号获取失败"
+
+    return res_info
+
+
+# 这里直接获取版本号
+version, data_version = get_version()
+# 这里直接获取当前环境
+env_now = get_env()
+# 获取最新版本号
+remote_version_info = get_remote_version(version)

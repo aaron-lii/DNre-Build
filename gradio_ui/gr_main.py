@@ -4,10 +4,12 @@
 
 import gradio as gr
 
+from src.tool_func import data_version, remote_version_info
+
 
 def create_main_tab():
     with gr.Tab("主页"):
-        text_info = """
+        text_info = f"""
         ### 使用说明
         1. 在本页面选择角色职业
         2. 在装备页、纹章页、石板页、时装页、综合等级页、其他属性页面选择对应装备
@@ -22,8 +24,11 @@ def create_main_tab():
         ### 备注
         1. MP恢复、移速、硬直眩晕抵抗计算异常
         2. 如有需要的职业buff、称号、装备、附魔未收录的，请联系作者
+        3. 许多功能还未完善，版本更新可能会比较频繁，等迭代几次后再更新本地版
         
-        **当前数据版本**: 2025-3-11；**作者**: MXX；**数据支持**: 阿笑
+        **当前数据版本**: {data_version}；**作者**: MXX；**数据支持**: 阿笑
+        
+        **最新配装器版本**: {remote_version_info}
         """
         jobs_list = ["请选择你的职业",
                      "剑皇", "月之领主", "狂战士", "毁灭者",
