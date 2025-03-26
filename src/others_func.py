@@ -46,6 +46,7 @@ def get_skill_state(job, skill_levels):
     if job in skill_json["个人buff"]:
         personal_skill_name_list = list(skill_json["个人buff"][job].keys())
     team_skill_name_list = list(skill_json["团队buff"].keys())
+    association_skill_name_list = list(skill_json["公会buff"].keys())
 
     state_dict_list = []
     for i in range(len(base_skill_name_list)):
@@ -58,25 +59,34 @@ def get_skill_state(job, skill_levels):
     for i in range(len(job_skill_name_list)):
         state_now = {}
         for state_name, state_val_list in skill_json["被动"][job][job_skill_name_list[i]].items():
-            if skill_levels[3: 6][i] > 0:
-                state_now[state_name] = state_val_list[skill_levels[3: 6][i] - 1]
+            if skill_levels[3: 8][i] > 0:
+                state_now[state_name] = state_val_list[skill_levels[3: 8][i] - 1]
         state_dict_list.append(state_now)
 
     for i in range(len(personal_skill_name_list)):
         state_now = {}
         for state_name, state_val_list in skill_json["个人buff"][job][personal_skill_name_list[i]].items():
-            if skill_levels[6: 9][i] > 1:
-                state_now[state_name] = state_val_list[skill_levels[6: 9][i] - 1]
+            if skill_levels[8: 12][i] > 0:
+                state_now[state_name] = state_val_list[skill_levels[8: 12][i] - 1]
         state_dict_list.append(state_now)
 
     for i in range(len(team_skill_name_list)):
         state_now = {}
         for state_name, state_val_list in skill_json["团队buff"][team_skill_name_list[i]].items():
-            if skill_levels[9: 15][i] > 1:
-                state_now[state_name] = state_val_list[skill_levels[9: 15][i] - 1]
+            if skill_levels[12: 20][i] > 0:
+                state_now[state_name] = state_val_list[skill_levels[12: 20][i] - 1]
         state_dict_list.append(state_now)
 
-    return add_dicts(state_dict_list)
+    # 公会buff有额外的乘区
+    association_state_list = []
+    for i in range(len(association_skill_name_list)):
+        state_now = {}
+        for state_name, state_val_list in skill_json["公会buff"][association_skill_name_list[i]].items():
+            if skill_levels[20: 24][i] > 0:
+                state_now[state_name] = state_val_list[skill_levels[20: 24][i] - 1]
+        association_state_list.append(state_now)
+
+    return add_dicts(state_dict_list), add_dicts(association_state_list)
 
 
 def others_func(job, input_list):
@@ -91,11 +101,11 @@ def others_func(job, input_list):
     # print(collection_state)
 
     # 计算技能增加的属性
-    skill_levels = input_list[2: 17]
-    skill_state = get_skill_state(job, skill_levels)
+    skill_levels = input_list[2: 26]
+    skill_state, association_state = get_skill_state(job, skill_levels)
     # print(skill_state)
 
-    return add_dicts([appellation_state, collection_state]), skill_state
+    return add_dicts([appellation_state, collection_state]), skill_state, association_state
 
 
 

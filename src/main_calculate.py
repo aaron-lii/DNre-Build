@@ -33,7 +33,8 @@ def state_calculate(job,
                     skin_state,
                     surplus_state,
                     others_state,
-                    skill_state):
+                    skill_state,
+                    association_state):
     """ 计算 """
     res_state_dict = {"力量": 0, "敏捷": 0, "智力": 0, "体质": 0,
                       "HP": 0, "MP": 0, "MP恢复": 0, "移速": 0,
@@ -72,14 +73,25 @@ def state_calculate(job,
     base_name_list = ["力量", "敏捷", "智力", "体质"]
     base_percent_name_list = ["力量%", "敏捷%", "智力%", "体质%"]
     for i in range(len(base_name_list)):
+        skill_plus = 0
+        if base_name_list[i] in skill_state:
+            skill_plus = skill_state[base_name_list[i]]
         skill_rate = 1
         if base_percent_name_list[i] in skill_state:
             skill_rate = 1 + skill_state[base_percent_name_list[i]]
         basic_rate = 1
         if base_percent_name_list[i] in basic_state:
             basic_rate = 1 + basic_state[base_percent_name_list[i]]
+        association_plus = 0
+        if base_name_list[i] in association_state:
+            association_plus = association_state[base_name_list[i]]
+        association_rate = 1
+        if base_percent_name_list[i] in association_state:
+            association_rate = 1 + association_state[base_percent_name_list[i]]
         # 先乘装备之类的百分比，再乘技能给的百分比
-        base_state_now = int(int(basic_state[base_name_list[i]] * basic_rate) * skill_rate)
+        base_state_now = int(int(basic_state[base_name_list[i]] * basic_rate + skill_plus) * skill_rate)
+        # 再计算公会buff
+        base_state_now = int((base_state_now + association_plus) * association_rate)
         calculate_dict[base_name_list[i]] = base_state_now
         res_state_dict[base_name_list[i]] = base_state_now
 
@@ -111,8 +123,13 @@ def state_calculate(job,
     # 最后一步算技能buff加成
     calculate_skill_dict = {"HP%": 0, "MP%": 0, "MP恢复%": 0,
                             "物攻": 0, "魔攻": 0, "物攻%": 0, "魔攻%": 0,
-                            "致命": 0, "致命面板%": 0, "眩晕面板%": 0, "光攻%": 0}
+                            "致命": 0, "致命面板%": 0, "眩晕面板%": 0,
+                            "光攻%": 0, "暗攻%": 0, "火攻%": 0, "水攻%": 0,
+                            "力量转魔攻%": 0, "智力转物攻%": 0}
     calculate_skill_dict = add_dicts([calculate_skill_dict, skill_state])
+    # 计算审判力量加成
+    calculate_skill_dict["物攻"] += calculate_dict["智力"] * calculate_skill_dict["智力转物攻%"]
+    calculate_skill_dict["魔攻"] += calculate_dict["力量"] * calculate_skill_dict["力量转魔攻%"]
     calculate_dict["最小物攻"] = (calculate_dict["最小物攻"] + calculate_skill_dict["物攻"]) * \
                              (1 + calculate_skill_dict["物攻%"])
     calculate_dict["最大物攻"] = (calculate_dict["最大物攻"] + calculate_skill_dict["物攻"]) * \
@@ -124,7 +141,7 @@ def state_calculate(job,
     for state_name_now in ["HP", "MP", "MP恢复"]:
         calculate_dict[state_name_now] = calculate_dict[state_name_now] * \
                                          (1 + calculate_skill_dict[state_name_now + "%"])
-    for state_name_now in ["致命", "致命面板%", "光攻%"]:
+    for state_name_now in ["致命", "致命面板%", "光攻%", "暗攻%", "火攻%", "水攻%"]:
         calculate_dict[state_name_now] += calculate_skill_dict[state_name_now]
 
     for key, val in res_state_dict.items():
@@ -152,6 +169,7 @@ def dps_increase_calculate(job,
                            surplus_state,
                            others_state,
                            skill_state,
+                           association_state,
                            final_state,
                            dps_list):
     """ 计算攻击属性收益 """
@@ -167,19 +185,27 @@ def dps_increase_calculate(job,
     for key, val in glyph_plus_dict.items():
         tmp_state = add_dicts([others_state, glyph_json["plus"]["50A"][key]])
         tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
-                                          skin_state, surplus_state, tmp_state, skill_state)
+                                          skin_state, surplus_state, tmp_state, skill_state, association_state)
         dps_now = dps_func(list(dps_list) + [tmp_final_state])
         res_dps_list.append((round((dps_now - ori_dps) / ori_dps * 100, 2), val))
 
     for key, val in rune_dict.items():
         tmp_state = add_dicts([others_state, {key: max(rune_json["atk"][key])}])
         tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
-                                          skin_state, surplus_state, tmp_state, skill_state)
+                                          skin_state, surplus_state, tmp_state, skill_state, association_state)
         dps_now = dps_func(list(dps_list) + [tmp_final_state])
         res_dps_list.append((round((dps_now - ori_dps) / ori_dps * 100, 2), val))
 
     # 输出格式规整
-    res_dps_text = f"您面对【{dps_list[4]}】使用【{dps_list[1]}】属性【{dps_list[0]}】技能的战斗力竟然高达【{ori_dps}】! ! !"
+    # res_dps_text = f"您面对【{dps_list[-1]}】使用【{dps_list[1]}】属性【{dps_list[0]}】技能的战斗力竟然高达【{ori_dps}】! ! !"
+    res_dps_text = f"您面对【{dps_list[-1]}】使用\n"
+    for (atk_type1_now, atk_type2_now, atk_num1_now) in [(dps_list[0], dps_list[1], dps_list[2]),
+                                                         (dps_list[4], dps_list[5], dps_list[6]),
+                                                         (dps_list[8], dps_list[9], dps_list[10])]:
+        if atk_type1_now != "无" and atk_num1_now > 0:
+            res_dps_text += f"【{atk_type2_now}】属性【{atk_type1_now}】\n"
+    res_dps_text += f"技能的战斗力竟然高达【{ori_dps}】! ! !"
+
     res_dps_dict_final = {"属性": [], "收益率": []}
     # res_dps_list.sort()
     for key, val in res_dps_list:
@@ -200,6 +226,7 @@ def def_increase_calculate(job,
                            surplus_state,
                            others_state,
                            skill_state,
+                           association_state,
                            final_state,
                            dps_list,
                            def_type="物防"):
@@ -218,7 +245,7 @@ def def_increase_calculate(job,
     for key, val in glyph_plus_dict.items():
         tmp_state = add_dicts([others_state, glyph_json["plus"]["50A"][key]])
         tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
-                                          skin_state, surplus_state, tmp_state, skill_state)
+                                          skin_state, surplus_state, tmp_state, skill_state, association_state)
         def_now = def_func(list(dps_list) + [tmp_final_state, def_type])
         res_def_list.append((round((def_now - ori_def) / ori_def * 100, 2), val))
 
@@ -228,12 +255,12 @@ def def_increase_calculate(job,
                 continue
             tmp_state = add_dicts([others_state, {key: max(rune_json[key2][key])}])
             tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
-                                              skin_state, surplus_state, tmp_state, skill_state)
+                                              skin_state, surplus_state, tmp_state, skill_state, association_state)
             def_now = def_func(list(dps_list) + [tmp_final_state, def_type])
             res_def_list.append((round((def_now - ori_def) / ori_def * 100, 2), val))
 
     # 输出格式规整
-    res_def_text = f"您面对【{dps_list[4]}】的【{def_type}】生存力足足有【{ori_def}】! ! !"
+    res_def_text = f"您面对【{dps_list[-1]}】的【{def_type}】生存力足足有【{ori_def}】! ! !"
     res_def_dict_final = {"属性": [], "收益率": []}
     # res_dps_list.sort()
     for key, val in res_def_list:
@@ -300,31 +327,31 @@ def main_func(*args):
         surplus_state = surplus_func(surplus_list)
 
         # 其他属性
-        others_list = args[120: 137]
-        others_state, skill_state = others_func(job_now, others_list)
+        others_list = args[120: 146]
+        others_state, skill_state, association_state = others_func(job_now, others_list)
 
         final_state = state_calculate(job_now,
                                       player_base_state, equipment_state, glyph_state,
                                       rune_state, skin_state, surplus_state,
-                                      others_state, skill_state)
+                                      others_state, skill_state, association_state)
         # print(final_state)
 
         # 计算输出期望和防御期望
-        dps_list = args[137: 143]
+        dps_list = args[146: 159]
         ori_dps, dps_increase_df = dps_increase_calculate(job_now,
                                                           player_base_state, equipment_state, glyph_state,
                                                           rune_state, skin_state, surplus_state,
-                                                          others_state, skill_state,
+                                                          others_state, skill_state, association_state,
                                                           final_state, dps_list)
         ori_def, def_increase_df = def_increase_calculate(job_now,
                                                           player_base_state, equipment_state, glyph_state,
                                                           rune_state, skin_state, surplus_state,
-                                                          others_state, skill_state,
+                                                          others_state, skill_state, association_state,
                                                           final_state, dps_list, "物防")
         ori_magic_def, magic_def_increase_df = def_increase_calculate(job_now,
                                                                       player_base_state, equipment_state, glyph_state,
                                                                       rune_state, skin_state, surplus_state,
-                                                                      others_state, skill_state,
+                                                                      others_state, skill_state, association_state,
                                                                       final_state, dps_list, "魔防")
 
         out_text_list = get_out_format(job_now, final_state)

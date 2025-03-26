@@ -123,22 +123,22 @@ with gr.Blocks(theme="base",
                 skin_list + \
                 surplus_list + \
                 other_list + \
-                dps_list[: 5]
+                dps_list
 
     with gr.Row():
         submit_btn = gr.Button("计算面板", variant="primary")
     gr.Markdown("---")
     gr.Markdown("### 战力计算结果")
     with gr.Row():
-        dps_text = gr.Text("一刀秒了！", label="当前配装的战斗力")
+        dps_text = gr.TextArea("一刀秒了！", label="当前配装的战斗力", lines=4)
         dps_increase_plot = gr.BarPlot(x="属性", y="收益率", title="三属性纹章和石板攻击属性收益率",
                                        sort="-y", height=300, bar_width=0.5, x_label_angle=45)
     with gr.Row():
-        def_text = gr.Text("神操，不会中技能！", label="当前配装的物防生存力")
+        def_text = gr.TextArea("神操，不会中技能！", label="当前配装的物防生存力", lines=2)
         def_increase_plot = gr.BarPlot(x="属性", y="收益率", title="三属性纹章和石板物防属性收益率",
                                        sort="-y", height=300, bar_width=0.5, x_label_angle=45)
     with gr.Row():
-        magic_def_text = gr.Text("神操，不会中技能！", label="当前配装的魔防生存力")
+        magic_def_text = gr.TextArea("神操，不会中技能！", label="当前配装的魔防生存力", lines=2)
         magic_def_increase_plot = gr.BarPlot(x="属性", y="收益率", title="三属性纹章和石板魔防属性收益率",
                                              sort="-y", height=300, bar_width=0.5, x_label_angle=45)
     gr.Markdown("---")
@@ -163,10 +163,10 @@ with gr.Blocks(theme="base",
     save_btn.click(save_options, inputs=all_input, outputs=save_file)
 
     # 为了让加载配置对实时更新的选项生效，再跑一边，顺序反着是因为gradio的button顺序是反着触发的
-    load_btn.click(load_options2, outputs=all_input[:137])
-    load_btn.click(load_options, inputs=load_file, outputs=all_input[:137])
+    load_btn.click(load_options2, outputs=all_input)
+    load_btn.click(load_options, inputs=load_file, outputs=all_input)
 
-    job.change(update_all, inputs=[job], outputs=equipment_list[:7] + other_list[5:11] + dps_list[:4])
+    job.change(update_all, inputs=[job], outputs=equipment_list[:7] + other_list[5:14] + dps_list[:12])
 
     demo.add(gr.HTML(custom_html))
 
