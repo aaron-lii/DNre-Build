@@ -77,7 +77,7 @@ def get_version():
     version_now = ""
     data_version_now = ""
     try:
-        with open(get_my_path("update_logs.txt"), "r") as f_r:
+        with open(get_my_path("update_logs.txt"), "r", encoding='utf-8') as f_r:
             line_all = f_r.readlines()
             version_now = line_all[0].strip().split(": ", 1)[1]
             data_version_now = line_all[1].strip().split(": ", 1)[1]
