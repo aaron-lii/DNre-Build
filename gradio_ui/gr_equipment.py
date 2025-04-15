@@ -73,10 +73,13 @@ def get_suffix_data():
         data = json.load(file)
 
     for part, val in equipment_base_dict["战士"].items():
-        lv, equipment_name = val[0].split("-", 1)
-        if part not in suffix_dict:
-            suffix_dict[part] = {}
-        suffix_dict[part] = list(data["战士"][lv][equipment_name].keys())
+        for equipment_now in val:
+            lv, equipment_name = equipment_now.split("-", 1)
+            if lv == "50S":
+                if part not in suffix_dict:
+                    suffix_dict[part] = {}
+                suffix_dict[part] = list(data["战士"][lv][equipment_name].keys())
+                break
 
     return suffix_dict
 
