@@ -25,8 +25,8 @@ def get_rune_state(rune_names,
 
 def rune_func(input_list):
     """ 主入口 """
-    rune_names = input_list[: 16]
-    rune_ps = input_list[16: 32]
+    rune_names = input_list[: 24]
+    rune_ps = input_list[24: 48]
 
     rune_state = get_rune_state(rune_names, rune_ps)
     # print(rune_state)

@@ -36,15 +36,6 @@ def update_all(job_input):
     return change1 + change2 + change3
 
 
-def process_input(emblem_list):
-    filtered_lst = [x for x in emblem_list if x != "无"]
-    print(filtered_lst)
-
-    if len(filtered_lst) != len(set(filtered_lst)):
-        print(len(filtered_lst), len(set(filtered_lst)))
-        gr.Warning("不能选择重复的纹章！")
-
-
 def logo():
     with antd.Typography.Title(level=1,
                                elem_style=dict(fontSize=24,

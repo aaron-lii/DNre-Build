@@ -32,13 +32,21 @@ def get_build_list():
                 ["glyph5_p", "无"], ["glyph6_p", "无"], ["glyph7_p", "无"], ["glyph8_p", "无"],
                 ["glyph9_p", "无"], ["glyph10_p", "无"], ["glyph11_p", "无"],
                 ["rune1", "无"], ["rune2", "无"], ["rune3", "无"], ["rune4", "无"],
+                ["rune17", "无"], ["rune18", "无"],
                 ["rune5", "无"], ["rune6", "无"], ["rune7", "无"], ["rune8", "无"],
+                ["rune19", "无"], ["rune20", "无"],
                 ["rune9", "无"], ["rune10", "无"], ["rune11", "无"], ["rune12", "无"],
+                ["rune21", "无"], ["rune22", "无"],
                 ["rune13", "无"], ["rune14", "无"], ["rune15", "无"], ["rune16", "无"],
+                ["rune23", "无"], ["rune24", "无"],
                 ["rune1_p", "无"], ["rune2_p", "无"], ["rune3_p", "无"], ["rune4_p", "无"],
+                ["rune17_p", "无"], ["rune18_p", "无"],
                 ["rune5_p", "无"], ["rune6_p", "无"], ["rune7_p", "无"], ["rune8_p", "无"],
+                ["rune19_p", "无"], ["rune20_p", "无"],
                 ["rune9_p", "无"], ["rune10_p", "无"], ["rune11_p", "无"], ["rune12_p", "无"],
+                ["rune21_p", "无"], ["rune22_p", "无"],
                 ["rune13_p", "无"], ["rune14_p", "无"], ["rune15_p", "无"], ["rune16_p", "无"],
+                ["rune23_p", "无"], ["rune24_p", "无"],
                 ["weapon1_skin", "无"], ["weapon2_skin", "无"],
                 ["wing_skin", "无"], ["tail_skin", "无"], ["printing_skin", "无"],
                 ["necklace_skin", "无"], ["earrings_skin", "无"], ["ring1_skin", "无"], ["ring2_skin", "无"],
@@ -108,7 +116,7 @@ def load_options(input_file_path):
                 else:
                     # 兼容旧版存档
                     for i in range(len(default_list)):
-                        if i < 120:
+                        if i < 63:
                             load_data.append(load_now[i])
                         else:
                             load_data.append(default_list[i][1])

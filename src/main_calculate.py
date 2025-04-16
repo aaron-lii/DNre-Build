@@ -18,6 +18,7 @@ from src.percent_calculate import calculate_def_percent, \
     calculate_critical_percent, calculate_final_atk_percent
 from src.dps_func import dps_func, def_func
 
+from gradio_ui.gr_warning_check import check_rune, check_glyph, check_equipment
 from src.tool_func import add_dicts, job_info_dict, job_info_dict2
 
 # 加载数据
@@ -308,26 +309,29 @@ def main_func(*args):
 
         # 获取装备属性
         equipment_list = args[1: 41]
+        check_equipment(equipment_list)
         equipment_state = equipment_func(job_now, equipment_list)
 
         # 获取纹章属性
         glyph_list = args[41: 63]
+        check_glyph(glyph_list)
         glyph_state = glyph_func(glyph_list)
 
         # 获取石板属性
-        rune_list = args[63: 95]
+        rune_list = args[63: 111]
+        check_rune(rune_list)
         rune_state = rune_func(rune_list)
 
         # 获取时装属性
-        skin_list = args[95: 104]
+        skin_list = args[111: 120]
         skin_state = skin_func(skin_list)
 
         # 获取综合等级属性
-        surplus_list = args[104: 120]
+        surplus_list = args[120: 136]
         surplus_state = surplus_func(surplus_list)
 
         # 其他属性
-        others_list = args[120: 146]
+        others_list = args[136: 162]
         others_state, skill_state, association_state = others_func(job_now, others_list)
 
         final_state = state_calculate(job_now,
@@ -337,7 +341,7 @@ def main_func(*args):
         # print(final_state)
 
         # 计算输出期望和防御期望
-        dps_list = args[146: 159]
+        dps_list = args[162: 175]
         ori_dps, dps_increase_df = dps_increase_calculate(job_now,
                                                           player_base_state, equipment_state, glyph_state,
                                                           rune_state, skin_state, surplus_state,
