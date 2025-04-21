@@ -8,7 +8,7 @@ import gradio as gr
 def check_glyph(glyph_list):
     """ 检查纹章 """
     glyph_now_list = []
-    for glyph_now in glyph_list:
+    for glyph_now in glyph_list[:11]:
         if glyph_now == "无":
             continue
         glyph_now = glyph_now.split("-", 1)[1]
