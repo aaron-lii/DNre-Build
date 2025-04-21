@@ -172,7 +172,7 @@ demo.launch(
     # server_name="0.0.0.0",
     server_port=port_now,
     favicon_path=get_my_path("data/logo2.ico"),
-    max_file_size="5kb",
+    max_file_size="10kb",
     show_api=False,
     share=False,
     inbrowser=True)

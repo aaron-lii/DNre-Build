@@ -25,7 +25,9 @@ def check_equipment(equipment_list):
     suffix_list = equipment_list[7: 14]
 
     for i in range(len(equip_list)):
-        if "40" in equip_list[i] and "II" in suffix_list[i]:
+        if "40A" in equip_list[i] and "II" in suffix_list[i]:
+            gr.Warning(equip_list[i] + " 没有后缀: " + suffix_list[i])
+        elif "40S" in equip_list[i] and "II" in suffix_list[i]:
             gr.Warning(equip_list[i] + " 没有后缀: " + suffix_list[i])
 
 
