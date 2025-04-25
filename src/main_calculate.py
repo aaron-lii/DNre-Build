@@ -17,6 +17,7 @@ from src.others_func import others_func
 from src.percent_calculate import calculate_def_percent, \
     calculate_critical_percent, calculate_final_atk_percent
 from src.dps_func import dps_func, def_func
+from src.card_func import card_func
 
 from gradio_ui.gr_warning_check import check_rune, check_glyph, check_equipment
 from src.tool_func import add_dicts, job_info_dict, job_info_dict2
@@ -35,7 +36,8 @@ def state_calculate(job,
                     surplus_state,
                     others_state,
                     skill_state,
-                    association_state):
+                    association_state,
+                    card_state):
     """ 计算 """
     res_state_dict = {"力量": 0, "敏捷": 0, "智力": 0, "体质": 0,
                       "HP": 0, "MP": 0, "MP恢复": 0, "移速": 0,
@@ -65,7 +67,7 @@ def state_calculate(job,
 
     # 首先把基础属性汇总
     basic_state = add_dicts([player_state, equipment_state, glyph_state,
-                             rune_state, skin_state, others_state])
+                             rune_state, skin_state, others_state, card_state])
 
     # 用于计算的dict
     calculate_dict = add_dicts([calculate_dict, basic_state])
@@ -171,6 +173,7 @@ def dps_increase_calculate(job,
                            others_state,
                            skill_state,
                            association_state,
+                           card_state,
                            final_state,
                            dps_list):
     """ 计算攻击属性收益 """
@@ -186,14 +189,16 @@ def dps_increase_calculate(job,
     for key, val in glyph_plus_dict.items():
         tmp_state = add_dicts([others_state, glyph_json["plus"]["50A"][key]])
         tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
-                                          skin_state, surplus_state, tmp_state, skill_state, association_state)
+                                          skin_state, surplus_state, tmp_state, skill_state, association_state,
+                                          card_state,)
         dps_now = dps_func(list(dps_list) + [tmp_final_state])
         res_dps_list.append((round((dps_now - ori_dps) / ori_dps * 100, 2), val))
 
     for key, val in rune_dict.items():
         tmp_state = add_dicts([others_state, {key: max(rune_json["atk"][key])}])
         tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
-                                          skin_state, surplus_state, tmp_state, skill_state, association_state)
+                                          skin_state, surplus_state, tmp_state, skill_state, association_state,
+                                          card_state,)
         dps_now = dps_func(list(dps_list) + [tmp_final_state])
         res_dps_list.append((round((dps_now - ori_dps) / ori_dps * 100, 2), val))
 
@@ -228,6 +233,7 @@ def def_increase_calculate(job,
                            others_state,
                            skill_state,
                            association_state,
+                           card_state,
                            final_state,
                            dps_list,
                            def_type="物防"):
@@ -246,7 +252,8 @@ def def_increase_calculate(job,
     for key, val in glyph_plus_dict.items():
         tmp_state = add_dicts([others_state, glyph_json["plus"]["50A"][key]])
         tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
-                                          skin_state, surplus_state, tmp_state, skill_state, association_state)
+                                          skin_state, surplus_state, tmp_state, skill_state, association_state,
+                                          card_state,)
         def_now = def_func(list(dps_list) + [tmp_final_state, def_type])
         res_def_list.append((round((def_now - ori_def) / ori_def * 100, 2), val))
 
@@ -256,7 +263,8 @@ def def_increase_calculate(job,
                 continue
             tmp_state = add_dicts([others_state, {key: max(rune_json[key2][key])}])
             tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
-                                              skin_state, surplus_state, tmp_state, skill_state, association_state)
+                                              skin_state, surplus_state, tmp_state, skill_state, association_state,
+                                              card_state,)
             def_now = def_func(list(dps_list) + [tmp_final_state, def_type])
             res_def_list.append((round((def_now - ori_def) / ori_def * 100, 2), val))
 
@@ -334,10 +342,14 @@ def main_func(*args):
         others_list = args[136: 162]
         others_state, skill_state, association_state = others_func(job_now, others_list)
 
+        # 卡片属性
+        card_list = args[175: 239]
+        card_state = card_func(card_list)
+
         final_state = state_calculate(job_now,
                                       player_base_state, equipment_state, glyph_state,
                                       rune_state, skin_state, surplus_state,
-                                      others_state, skill_state, association_state)
+                                      others_state, skill_state, association_state, card_state)
         # print(final_state)
 
         # 计算输出期望和防御期望
@@ -346,16 +358,19 @@ def main_func(*args):
                                                           player_base_state, equipment_state, glyph_state,
                                                           rune_state, skin_state, surplus_state,
                                                           others_state, skill_state, association_state,
+                                                          card_state,
                                                           final_state, dps_list)
         ori_def, def_increase_df = def_increase_calculate(job_now,
                                                           player_base_state, equipment_state, glyph_state,
                                                           rune_state, skin_state, surplus_state,
                                                           others_state, skill_state, association_state,
+                                                          card_state,
                                                           final_state, dps_list, "物防")
         ori_magic_def, magic_def_increase_df = def_increase_calculate(job_now,
                                                                       player_base_state, equipment_state, glyph_state,
                                                                       rune_state, skin_state, surplus_state,
                                                                       others_state, skill_state, association_state,
+                                                                      card_state,
                                                                       final_state, dps_list, "魔防")
 
         out_text_list = get_out_format(job_now, final_state)

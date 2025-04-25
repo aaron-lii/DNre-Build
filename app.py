@@ -17,6 +17,7 @@ from gradio_ui.gr_surplus_level import create_surplus_level_tab
 from gradio_ui.gr_others import create_others_tab, update_skill_options
 from gradio_ui.save_load import save_options, load_options, load_options2
 from gradio_ui.gr_dps import create_dps_tab, update_dps_options
+from gradio_ui.gr_card import create_card_tab
 from src.main_calculate import main_func
 from src.tool_func import get_my_path, version, env_now
 
@@ -96,6 +97,8 @@ with gr.Blocks(theme="base",
     equipment_list = create_equipment_tab()
     # 纹章页
     glyph_base, glyph_plus = create_glyph_tab()
+    # 卡片页
+    card_skill_list, card_list = create_card_tab()
     # 石板页
     rune_list = create_rune_tab()
     # 时装页
@@ -114,7 +117,8 @@ with gr.Blocks(theme="base",
                 skin_list + \
                 surplus_list + \
                 other_list + \
-                dps_list
+                dps_list + \
+                card_skill_list + card_list
 
     with gr.Row():
         submit_btn = gr.Button("计算面板", variant="primary")

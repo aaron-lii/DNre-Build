@@ -68,6 +68,11 @@ def get_build_list():
                 ["target_boss", "地狱主教-石人胡知诺斯"]
                 ]
 
+    for i in range(12):
+        res_list.append([f"card_skill_{i + 1}", 0])
+    for i in range(52):
+        res_list.append([f"card_{i + 1}", "无"])
+
     return res_list
 
 
