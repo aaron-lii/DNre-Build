@@ -161,7 +161,7 @@ with gr.Blocks(theme="base",
     load_btn.click(load_options2, outputs=all_input)
     load_btn.click(load_options, inputs=load_file, outputs=all_input)
 
-    job.change(update_all, inputs=[job], outputs=equipment_list[:7] + other_list[5:14] + dps_list[:12])
+    job.change(update_all, inputs=[job], outputs=equipment_list[:7] + other_list[5:14] + dps_list[:15])
 
     demo.add(gr.HTML(custom_html))
 

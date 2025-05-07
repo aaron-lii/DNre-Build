@@ -206,8 +206,8 @@ def dps_increase_calculate(job,
     # res_dps_text = f"您面对【{dps_list[-1]}】使用【{dps_list[1]}】属性【{dps_list[0]}】技能的战斗力竟然高达【{ori_dps}】! ! !"
     res_dps_text = f"您面对【{dps_list[-1]}】使用\n"
     for (atk_type1_now, atk_type2_now, atk_num1_now) in [(dps_list[0], dps_list[1], dps_list[2]),
-                                                         (dps_list[4], dps_list[5], dps_list[6]),
-                                                         (dps_list[8], dps_list[9], dps_list[10])]:
+                                                         (dps_list[5], dps_list[6], dps_list[7]),
+                                                         (dps_list[10], dps_list[11], dps_list[12])]:
         if atk_type1_now != "无" and atk_num1_now > 0:
             res_dps_text += f"【{atk_type2_now}】属性【{atk_type1_now}】\n"
     res_dps_text += f"技能的战斗力竟然高达【{ori_dps}】! ! !"
@@ -311,39 +311,49 @@ def get_out_format(job: str, input_dict: dict):
 def main_func(*args):
     """ 主入口 """
     try:
+        job_i = 0
+        equipment_i = job_i + 1
+        glyph_i = equipment_i + 40
+        rune_i = glyph_i + 22
+        skin_i = rune_i + 48
+        surplus_i = skin_i + 9
+        others_i = surplus_i + 16
+        dps_i = others_i + 26
+        card_i = dps_i + 16
+
         # 获取基础属性
-        job_now = args[0]
+        job_now = args[job_i]
         player_base_state = player_base_func(job_now)
 
         # 获取装备属性
-        equipment_list = args[1: 41]
+        equipment_list = args[equipment_i: glyph_i]
         check_equipment(equipment_list)
         equipment_state = equipment_func(job_now, equipment_list)
 
         # 获取纹章属性
-        glyph_list = args[41: 63]
+        glyph_list = args[glyph_i: rune_i]
         check_glyph(glyph_list)
         glyph_state = glyph_func(glyph_list)
 
         # 获取石板属性
-        rune_list = args[63: 111]
+        rune_list = args[rune_i: skin_i]
         check_rune(rune_list)
         rune_state = rune_func(rune_list)
 
         # 获取时装属性
-        skin_list = args[111: 120]
+        skin_list = args[skin_i: surplus_i]
         skin_state = skin_func(skin_list)
 
         # 获取综合等级属性
-        surplus_list = args[120: 136]
+        surplus_list = args[surplus_i: others_i]
         surplus_state = surplus_func(surplus_list)
 
         # 其他属性
-        others_list = args[136: 162]
+        others_list = args[others_i: dps_i]
         others_state, skill_state, association_state = others_func(job_now, others_list)
 
         # 卡片属性
-        card_list = args[175: 239]
+        card_list = args[card_i: len(args)]
         card_state = card_func(card_list)
 
         final_state = state_calculate(job_now,
@@ -353,7 +363,7 @@ def main_func(*args):
         # print(final_state)
 
         # 计算输出期望和防御期望
-        dps_list = args[162: 175]
+        dps_list = args[dps_i: card_i]
         ori_dps, dps_increase_df = dps_increase_calculate(job_now,
                                                           player_base_state, equipment_state, glyph_state,
                                                           rune_state, skin_state, surplus_state,

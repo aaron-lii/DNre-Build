@@ -20,9 +20,9 @@ atk_type_dict = {"光": ["光攻%", "光抗%"],
 def single_dps_func(input_list):
     """
     计算单属性dps
-    输出期望=(面板x技能百分比+技能固伤)x(1+属性攻-属性抗)x(1+暴击率x(1-暴击抵抗率))x(1+最终伤害)x(1+其他增伤)
+    输出期望=(面板x技能百分比+技能固伤)x(1+属性攻)x(1-属性抗)x(1+暴击率x(1-暴击抵抗率))x(1+最终伤害)x(1+其他增伤)
     """
-    atk_type1, atk_type2, atk_num1, atk_num2, target_boss, final_state = input_list
+    atk_type1, atk_type2, atk_num1, atk_num2, target_boss, final_state, glyph_plus = input_list
 
     if atk_type1 == "物攻":
         atk_num = (final_state["最小物攻"] + final_state["最大物攻"]) / 2
@@ -36,15 +36,15 @@ def single_dps_func(input_list):
     if atk_type2 == "无":
         dps_part2 = 1
     else:
-        dps_part2 = 1 + final_state[atk_type_dict[atk_type2][0]] \
-                    - boss_json[target_boss][atk_type_dict[atk_type2][1]]
+        dps_part2 = (1 + final_state[atk_type_dict[atk_type2][0]]) \
+                    * (1 - boss_json[target_boss][atk_type_dict[atk_type2][1]])
 
     # 计算暴击率乘区
     dps_part3 = 1 + final_state["致命百分比"] / 100 * \
                 (1 - calculate_critical_percent(boss_json[target_boss]["致命抵抗"]) / 100)
 
     # 计算最终乘区
-    dps_part4 = 1 + final_state["最终百分比"] / 100
+    dps_part4 = 1 + final_state["最终百分比"] / 100 + glyph_plus / 100
 
     # 计算其他乘区
     dps_part5 = 1 + final_state["额外伤害%"]
@@ -56,22 +56,22 @@ def dps_func(input_list):
     """
     计算混合dps
     """
-    (atk_type1, atk_type2, atk_num1, atk_num2,
-     atk_type3, atk_type4, atk_num3, atk_num4,
-     atk_type5, atk_type6, atk_num5, atk_num6,
+    (atk_type1, atk_type2, atk_num1, atk_num2, glyph_plus1,
+     atk_type3, atk_type4, atk_num3, atk_num4, glyph_plus3,
+     atk_type5, atk_type6, atk_num5, atk_num6, glyph_plus5,
      target_boss, final_state) = input_list
 
     atk_num_all = 0
     dps_all = 0
-    for (atk_type1_now, atk_type2_now,
-         atk_num1_now, atk_num2_now) in [(atk_type1, atk_type2, atk_num1, atk_num2,),
-                                         (atk_type3, atk_type4, atk_num3, atk_num4,),
-                                         (atk_type5, atk_type6, atk_num5, atk_num6,)]:
+    for (atk_type1_now, atk_type2_now, atk_num1_now,
+         atk_num2_now, glyph_plus1) in [(atk_type1, atk_type2, atk_num1, atk_num2, glyph_plus1),
+                                        (atk_type3, atk_type4, atk_num3, atk_num4, glyph_plus3),
+                                        (atk_type5, atk_type6, atk_num5, atk_num6, glyph_plus5)]:
         if atk_type1_now != "无" and atk_num1_now > 0:
             atk_num_all += atk_num1_now / 100
             dps_all += single_dps_func([atk_type1_now, atk_type2_now,
                                         atk_num1_now, atk_num2_now,
-                                        target_boss, final_state])
+                                        target_boss, final_state, glyph_plus1])
     # 归一化到技能面板为100%
     return round(dps_all / atk_num_all, 2)
 
@@ -82,8 +82,8 @@ def def_func(input_list):
     一击秒杀x(1-防御百分比)x(1+boss暴击率x(1-暴击抵抗率))=血量
     生存期望=血量/(1-防御百分比)/(1+boss暴击率x(1-暴击抵抗率))
     """
-    atk_type1, atk_type2, atk_num1, atk_num2, \
-    _, _, _, _, _, _, _, _, \
+    atk_type1, atk_type2, atk_num1, atk_num2, glyph_plus, \
+    _, _, _, _, _, _, _, _, _, _, \
     target_boss, final_state, def_type = input_list
 
     # 计算防御乘区

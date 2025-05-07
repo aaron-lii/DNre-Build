@@ -62,9 +62,9 @@ def get_build_list():
                 ["team_skill5", 0], ["team_skill6", 0], ["team_skill7", 0], ["team_skill8", 0],
                 ["association_skill1", 0], ["association_skill2", 0],
                 ["association_skill3", 0], ["association_skill4", 0],
-                ["atk_type1", "物理"], ["atk_type2", "无"], ["atk_num1", 100], ["atk_num2", 0],
-                ["atk_type3", "无"], ["atk_type4", "无"], ["atk_num3", 0], ["atk_num4", 0],
-                ["atk_type5", "无"], ["atk_type6", "无"], ["atk_num5", 0], ["atk_num6", 0],
+                ["atk_type1", "物理"], ["atk_type2", "无"], ["atk_num1", 100], ["atk_num2", 0], ["glyph_plus1", 0],
+                ["atk_type3", "无"], ["atk_type4", "无"], ["atk_num3", 0], ["atk_num4", 0], ["glyph_plus3", 0],
+                ["atk_type5", "无"], ["atk_type6", "无"], ["atk_num5", 0], ["atk_num6", 0], ["glyph_plus5", 0],
                 ["target_boss", "地狱主教-石人胡知诺斯"]
                 ]
 

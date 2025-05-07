@@ -29,7 +29,7 @@ dps_type_dict = get_dps_type_data()
 
 def update_dps_options(job):
     res = []
-    for i in range(12):
+    for i in range(15):
         res.append(gr.update(value=dps_type_dict[job][i]))
 
     return res
@@ -54,7 +54,7 @@ def create_dps_tab():
         不同职业输出模式不同，衡量标准也会有差异，这里只是给出了一个比较通用的计算方法。如果有比较好的思路，欢迎提出建议~
         </span>
         ### 计算公式
-        战斗力=(面板x技能百分比+技能固伤)x(1+属性攻-属性抗)x(1+暴击率x(1-暴击抵抗率))x(1+最终伤害)x(1+其他增伤)
+        战斗力=(面板x技能百分比+技能固伤)x(1+属性攻)x(1-属性抗)x(1+暴击率x(1-暴击抵抗率))x(1+最终伤害+伤害纹章)x(1+其他增伤)
         
         生存力=HP/(1-防御百分比)/(1+boss暴击率x(1-暴击抵抗率))
         """)
@@ -64,21 +64,19 @@ def create_dps_tab():
         
         懒得想就保持默认的技能面板100%+0也行吧
         """)
-        with gr.Row():
-            atk_type1 = gr.Dropdown(["物攻", "魔攻"], label="物魔选择")
-            atk_type2 = gr.Dropdown(["无", "光", "暗", "水", "火"], label="属性攻选择")
-            atk_num1 = gr.Number(value=100, precision=0, label="技能百分比部分%")
-            atk_num2 = gr.Number(value=0, precision=0, label="技能固定伤害部分")
-        with gr.Row():
-            atk_type3 = gr.Dropdown(["无", "物攻", "魔攻"], label="物魔选择")
-            atk_type4 = gr.Dropdown(["无", "光", "暗", "水", "火"], label="属性攻选择")
-            atk_num3 = gr.Number(value=0, precision=0, label="技能百分比部分%")
-            atk_num4 = gr.Number(value=0, precision=0, label="技能固定伤害部分")
-        with gr.Row():
-            atk_type5 = gr.Dropdown(["无", "物攻", "魔攻"], label="物魔选择")
-            atk_type6 = gr.Dropdown(["无", "光", "暗", "水", "火"], label="属性攻选择")
-            atk_num5 = gr.Number(value=0, precision=0, label="技能百分比部分%")
-            atk_num6 = gr.Number(value=0, precision=0, label="技能固定伤害部分")
+        atk_list = []
+        for row_i in range(3):
+            with gr.Row():
+                if row_i == 0:
+                    atk_type_list = ["物攻", "魔攻"]
+                else:
+                    atk_type_list = ["无", "物攻", "魔攻"]
+                atk_type1 = gr.Dropdown(atk_type_list, label="物魔选择")
+                atk_type2 = gr.Dropdown(["无", "光", "暗", "水", "火"], label="属性攻选择")
+                atk_num1 = gr.Number(value=100, precision=0, label="技能百分比部分%")
+                atk_num2 = gr.Number(value=0, precision=0, label="技能固定伤害部分")
+                glyph_plus1 = gr.Number(value=0, precision=0, label="技能伤害纹章%")
+                atk_list += [atk_type1, atk_type2, atk_num1, atk_num2, glyph_plus1]
 
         gr.Markdown("""
         ### 目标BOSS
@@ -88,10 +86,7 @@ def create_dps_tab():
             target_boss = gr.Dropdown(boss_list, label="BOSS选择")
             boss_state = gr.TextArea(label="BOSS属性预览", lines=4)
 
-    res_list = [atk_type1, atk_type2, atk_num1, atk_num2,
-                atk_type3, atk_type4, atk_num3, atk_num4,
-                atk_type5, atk_type6, atk_num5, atk_num6,
-                target_boss]
+    res_list = atk_list + [target_boss]
 
     target_boss.change(update_boss_options, inputs=[target_boss], outputs=[boss_state])
 
