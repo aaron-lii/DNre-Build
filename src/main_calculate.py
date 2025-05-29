@@ -308,6 +308,14 @@ def get_out_format(job: str, input_dict: dict):
     return [text1, text2, text3, text4, text5, text6, text7, text8]
 
 
+def get_check_format(input_dict: dict):
+    out_text = ""
+    for key, val in input_dict.items():
+        out_text += str(key) + ": " + str(val) + "\n"
+
+    return out_text.strip()
+
+
 def main_func(*args):
     """ 主入口 """
     try:
@@ -350,7 +358,7 @@ def main_func(*args):
 
         # 其他属性
         others_list = args[others_i: dps_i]
-        others_state, skill_state, association_state = others_func(job_now, others_list)
+        others_state, skill_state, association_state, collection_state = others_func(job_now, others_list)
 
         # 卡片属性
         card_list = args[card_i: len(args)]
@@ -401,4 +409,6 @@ def main_func(*args):
     return out_text_list + \
            [ori_dps, gr.update(value=dps_increase_df),
             ori_def, gr.update(value=def_increase_df),
-            ori_magic_def, gr.update(value=magic_def_increase_df)]
+            ori_magic_def, gr.update(value=magic_def_increase_df)] + \
+           [get_check_format(glyph_state), get_check_format(card_state),
+            get_check_format(rune_state), get_check_format(collection_state)]

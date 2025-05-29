@@ -105,7 +105,7 @@ def others_func(job, input_list):
     skill_state, association_state = get_skill_state(job, skill_levels)
     # print(skill_state)
 
-    return add_dicts([appellation_state, collection_state]), skill_state, association_state
-
+    return add_dicts([appellation_state, collection_state]), skill_state, association_state, \
+           collection_state
 
 

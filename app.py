@@ -150,11 +150,21 @@ with gr.Blocks(theme="base",
     with gr.Row():
         out_text7 = gr.Textbox(label="特殊防御信息")
         out_text8 = gr.Textbox(label="其他信息")
+
+    gr.Markdown("---")
+    gr.Markdown("### 属性校验(框内属性过多可以滚动)")
+    with gr.Row():
+        check_text1 = gr.Textbox(label="纹章页汇总", autoscroll=False)
+        check_text2 = gr.Textbox(label="卡片页汇总", autoscroll=False)
+        check_text3 = gr.Textbox(label="石板页汇总", autoscroll=False)
+        check_text4 = gr.Textbox(label="时装收集汇总", autoscroll=False)
+
     submit_btn.click(main_func, inputs=all_input, outputs=[out_text1, out_text2, out_text3, out_text4,
                                                            out_text5, out_text6, out_text7, out_text8,
                                                            dps_text, dps_increase_plot,
                                                            def_text, def_increase_plot,
-                                                           magic_def_text, magic_def_increase_plot])
+                                                           magic_def_text, magic_def_increase_plot,
+                                                           check_text1, check_text2, check_text3, check_text4])
     save_btn.click(save_options, inputs=all_input, outputs=save_file)
 
     # 为了让加载配置对实时更新的选项生效，再跑一边，顺序反着是因为gradio的button顺序是反着触发的

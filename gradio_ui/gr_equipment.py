@@ -7,6 +7,9 @@ import gradio as gr
 from src.tool_func import get_my_path
 
 
+job_now_list = ["无", "无"]
+
+
 def get_base_data():
     """ 获取base数据 """
     base_dict = {}
@@ -24,7 +27,7 @@ def get_base_data():
                     if part not in base_dict[job]:
                         base_dict[job][part] = []
                     base_dict[job][part].append(lv + "-" + equipment_name)
-    return base_dict
+    return base_dict, data
 
 
 def get_jewelry_data():
@@ -48,7 +51,7 @@ def get_jewelry_data():
 
 
 # 这里直接构建实例
-equipment_base_dict = get_base_data()
+equipment_base_dict, equipment_ori_dict = get_base_data()
 jewelry_dict = get_jewelry_data()
 
 
@@ -81,7 +84,11 @@ def get_suffix_data():
                 suffix_dict[part] = list(data["战士"][lv][equipment_name].keys())
                 break
 
-    return suffix_dict
+    return suffix_dict, data
+
+
+enchant_dict = get_enchant_data()
+suffix_dict, suffix_ori_dict = get_suffix_data()
 
 
 def update_equipment_options(job):
@@ -98,6 +105,9 @@ def update_equipment_options(job):
 
     job_one = job_info_dict2[job]
     base_job = job_info_dict[job_one]
+    global job_now_list
+    job_now_list = [job_one, base_job]
+
     choice_lists = []
     for part in ["主手", "副手", "头盔", "上装", "下装", "手套", "鞋子"]:
         star_equipment_list = []
@@ -131,8 +141,6 @@ def update_jewelry_options(jewelry_input):
 
 def create_equipment_tab():
     list_tmp = ["无"]
-    enchant_dict = get_enchant_data()
-    suffix_dict = get_suffix_data()
     atk_en_list = sorted(enchant_dict["atk_enchant"] + enchant_dict["base_enchant"], reverse=True)
     def_en_list = sorted(enchant_dict["def_enchant"] + enchant_dict["base_enchant"])
     ring_list = ["无"] + sorted(list(jewelry_dict["戒指"].keys()))
@@ -149,6 +157,7 @@ def create_equipment_tab():
                 # weapon1_star = gr.Slider(minimum=0, maximum=3, value=0, step=1, label="主手武器升星")
             with gr.Column():
                 weapon1_enchant = gr.Dropdown(atk_en_list, label="主手武器附魔", multiselect=True)
+                weapon1_out = gr.TextArea(label="主手武器属性", lines=4)
 
         gr.Markdown("---")
         with gr.Row():
