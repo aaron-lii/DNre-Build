@@ -18,6 +18,9 @@ from gradio_ui.gr_others import create_others_tab, update_skill_options
 from gradio_ui.save_load import save_options, load_options, load_options2
 from gradio_ui.gr_dps import create_dps_tab, update_dps_options
 from gradio_ui.gr_card import create_card_tab
+from gradio_ui.gr_out_panel import create_out_panel
+from gradio_ui.gr_out_ability import create_out_ability
+from gradio_ui.gr_out_check import create_out_check
 from src.main_calculate import main_func
 from src.tool_func import get_my_path, version, env_now
 
@@ -122,42 +125,15 @@ with gr.Blocks(theme="base",
 
     with gr.Row():
         submit_btn = gr.Button("计算面板", variant="primary")
-    gr.Markdown("---")
-    gr.Markdown("### 战力计算结果")
-    with gr.Row():
-        dps_text = gr.TextArea("一刀秒了！", label="当前配装的战斗力", lines=4)
-        dps_increase_plot = gr.BarPlot(x="属性", y="收益率", title="三属性纹章和石板攻击属性收益率",
-                                       sort="-y", height=300, bar_width=0.5, x_label_angle=45)
-    with gr.Row():
-        def_text = gr.TextArea("神操，不会中技能！", label="当前配装的物防生存力", lines=2)
-        def_increase_plot = gr.BarPlot(x="属性", y="收益率", title="三属性纹章和石板物防属性收益率",
-                                       sort="-y", height=300, bar_width=0.5, x_label_angle=45)
-    with gr.Row():
-        magic_def_text = gr.TextArea("神操，不会中技能！", label="当前配装的魔防生存力", lines=2)
-        magic_def_increase_plot = gr.BarPlot(x="属性", y="收益率", title="三属性纹章和石板魔防属性收益率",
-                                             sort="-y", height=300, bar_width=0.5, x_label_angle=45)
-    gr.Markdown("---")
-    gr.Markdown("### 面板计算结果")
-    with gr.Row():
-        out_text1 = gr.Textbox(label="基础信息")
-        out_text2 = gr.Textbox(label="属性信息")
-    with gr.Row():
-        out_text3 = gr.Textbox(label="一般信息")
-        out_text4 = gr.Textbox(label="特殊攻击信息")
-    with gr.Row():
-        out_text5 = gr.Textbox(label="属性攻击信息")
-        out_text6 = gr.Textbox(label="属性防御信息")
-    with gr.Row():
-        out_text7 = gr.Textbox(label="特殊防御信息")
-        out_text8 = gr.Textbox(label="其他信息")
 
     gr.Markdown("---")
-    gr.Markdown("### 属性校验(框内属性过多可以滚动)")
-    with gr.Row():
-        check_text1 = gr.Textbox(label="纹章页汇总", autoscroll=False)
-        check_text2 = gr.Textbox(label="卡片页汇总", autoscroll=False)
-        check_text3 = gr.Textbox(label="石板页汇总", autoscroll=False)
-        check_text4 = gr.Textbox(label="时装收集汇总", autoscroll=False)
+    out_text1, out_text2, out_text3, out_text4, \
+    out_text5, out_text6, out_text7, out_text8 = create_out_panel()
+
+    dps_text, dps_increase_plot, def_text, def_increase_plot, \
+    magic_def_text, magic_def_increase_plot = create_out_ability()
+
+    check_text1, check_text2, check_text3, check_text4 = create_out_check()
 
     submit_btn.click(main_func, inputs=all_input, outputs=[out_text1, out_text2, out_text3, out_text4,
                                                            out_text5, out_text6, out_text7, out_text8,

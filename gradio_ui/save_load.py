@@ -70,7 +70,7 @@ def get_build_list():
 
     for i in range(12):
         res_list.append([f"card_skill_{i + 1}", 0])
-    for i in range(52):
+    for i in range(57):
         res_list.append([f"card_{i + 1}", "无"])
 
     return res_list
