@@ -43,7 +43,7 @@ def get_card_state(card_skills,
 def card_func(input_list):
     """ 主入口 """
     card_skills = input_list[: 12]
-    cards = input_list[12: 64]
+    cards = input_list[12: len(input_list)]
 
     card_state = get_card_state(card_skills, cards)
     # print(rune_state)
