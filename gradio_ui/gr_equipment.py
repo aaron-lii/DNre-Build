@@ -95,12 +95,13 @@ def update_equipment_options(job):
     """ 根据job的选择更新选项 """
     job_info_dict = {"剑圣": "战士", "战神": "战士", "箭神": "弓箭", "游侠": "弓箭",
                      "元素": "法师", "魔导": "法师", "祭司": "牧师", "贤者": "牧师",
-                     "工程": "学者", "炼金": "学者"}
+                     "工程": "学者", "炼金": "学者", "呐喊者": "舞娘", "舞者": "舞娘"}
     job_info_dict2 = {"剑皇": "剑圣", "月之领主": "剑圣", "狂战士": "战神", "毁灭者": "战神",
                       "狙翎": "箭神", "魔羽": "箭神", "影舞者": "游侠", "风行者": "游侠",
                       "火舞": "元素", "冰灵": "元素", "时空领主": "魔导", "黑暗女王": "魔导",
                       "圣骑士": "贤者", "十字军": "贤者", "圣徒": "祭司", "雷神": "祭司",
-                      "重炮手": "工程", "机械大师": "工程", "炼金圣士": "炼金", "药剂师": "炼金"}
+                      "重炮手": "工程", "机械大师": "工程", "炼金圣士": "炼金", "药剂师": "炼金",
+                      "黑暗萨满": "呐喊者", "噬魂者": "呐喊者", "刀锋舞者": "舞者", "灵魂舞者": "舞者"}
     star_pre = "40S-海龙"
 
     job_one = job_info_dict2[job]
@@ -157,7 +158,7 @@ def create_equipment_tab():
                 # weapon1_star = gr.Slider(minimum=0, maximum=3, value=0, step=1, label="主手武器升星")
             with gr.Column():
                 weapon1_enchant = gr.Dropdown(atk_en_list, label="主手武器附魔", multiselect=True)
-                weapon1_out = gr.TextArea(label="主手武器属性", lines=4)
+                # weapon1_out = gr.TextArea(label="主手武器属性", lines=4)
 
         gr.Markdown("---")
         with gr.Row():
