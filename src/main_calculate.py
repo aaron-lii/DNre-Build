@@ -327,7 +327,7 @@ def main_func(*args):
         skin_i = rune_i + 48
         surplus_i = skin_i + 9
         others_i = surplus_i + 16
-        dps_i = others_i + 26
+        dps_i = others_i + 30
         card_i = dps_i + 16
 
         # 获取基础属性

@@ -29,7 +29,7 @@ skill_dict = get_skill_data()
 def get_team_skill_options():
     """ 生成团队buff列表 """
     res_list = []
-    for _ in range(8):
+    for _ in range(12):
         res_list.append([0, "无"])
 
     skill_list_now = list(skill_dict["团队buff"].keys())
@@ -137,24 +137,31 @@ def create_others_tab():
             personal_skill3 = gr.Slider(minimum=0, maximum=0, value=0, step=1, label="无")
             personal_skill4 = gr.Slider(minimum=0, maximum=0, value=0, step=1, label="无")
         gr.Markdown("### 团队buff")
-        with gr.Row():
-            team_skill1 = gr.Slider(minimum=0, maximum=team_skill_list[0][0],
-                                    value=0, step=1, label=team_skill_list[0][1])
-            team_skill2 = gr.Slider(minimum=0, maximum=team_skill_list[1][0],
-                                    value=0, step=1, label=team_skill_list[1][1])
-            team_skill3 = gr.Slider(minimum=0, maximum=team_skill_list[2][0],
-                                    value=0, step=1, label=team_skill_list[2][1])
-            team_skill4 = gr.Slider(minimum=0, maximum=team_skill_list[3][0],
-                                    value=0, step=1, label=team_skill_list[3][1])
-        with gr.Row():
-            team_skill5 = gr.Slider(minimum=0, maximum=team_skill_list[4][0],
-                                    value=0, step=1, label=team_skill_list[4][1])
-            team_skill6 = gr.Slider(minimum=0, maximum=team_skill_list[5][0],
-                                    value=0, step=1, label=team_skill_list[5][1])
-            team_skill7 = gr.Slider(minimum=0, maximum=team_skill_list[6][0],
-                                    value=0, step=1, label=team_skill_list[6][1])
-            team_skill8 = gr.Slider(minimum=0, maximum=team_skill_list[7][0],
-                                    value=0, step=1, label=team_skill_list[7][1])
+        team_skill_res = []
+        for i in range(3):
+            with gr.Row():
+                for j in range(4):
+                    team_skill_now = gr.Slider(minimum=0, maximum=team_skill_list[i * 4 + j][0],
+                                               value=0, step=1, label=team_skill_list[i * 4 + j][1])
+                    team_skill_res.append(team_skill_now)
+        # with gr.Row():
+        #     team_skill1 = gr.Slider(minimum=0, maximum=team_skill_list[0][0],
+        #                             value=0, step=1, label=team_skill_list[0][1])
+        #     team_skill2 = gr.Slider(minimum=0, maximum=team_skill_list[1][0],
+        #                             value=0, step=1, label=team_skill_list[1][1])
+        #     team_skill3 = gr.Slider(minimum=0, maximum=team_skill_list[2][0],
+        #                             value=0, step=1, label=team_skill_list[2][1])
+        #     team_skill4 = gr.Slider(minimum=0, maximum=team_skill_list[3][0],
+        #                             value=0, step=1, label=team_skill_list[3][1])
+        # with gr.Row():
+        #     team_skill5 = gr.Slider(minimum=0, maximum=team_skill_list[4][0],
+        #                             value=0, step=1, label=team_skill_list[4][1])
+        #     team_skill6 = gr.Slider(minimum=0, maximum=team_skill_list[5][0],
+        #                             value=0, step=1, label=team_skill_list[5][1])
+        #     team_skill7 = gr.Slider(minimum=0, maximum=team_skill_list[6][0],
+        #                             value=0, step=1, label=team_skill_list[6][1])
+        #     team_skill8 = gr.Slider(minimum=0, maximum=team_skill_list[7][0],
+        #                             value=0, step=1, label=team_skill_list[7][1])
         gr.Markdown("### 公会buff")
         with gr.Row():
             association_skill1 = gr.Slider(minimum=0, maximum=association_skill_list[0][0],
@@ -169,8 +176,9 @@ def create_others_tab():
     res_list = [appellation, skin_collections,
                 skill1, skill2, skill3, skill4, skill5, skill6, skill7, skill8,
                 personal_skill1, personal_skill2, personal_skill3, personal_skill4,
-                team_skill1, team_skill2, team_skill3, team_skill4,
-                team_skill5, team_skill6, team_skill7, team_skill8,
+                ] + team_skill_res + [
+                # team_skill1, team_skill2, team_skill3, team_skill4,
+                # team_skill5, team_skill6, team_skill7, team_skill8,
                 association_skill1, association_skill2, association_skill3, association_skill4]
 
     appellation.change(update_appellation_options, inputs=[appellation], outputs=[appellation_info])
