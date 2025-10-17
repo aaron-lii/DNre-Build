@@ -1,11 +1,9 @@
 """
 equipment
 """
-import json
 import gradio as gr
 
-from src.tool_func import get_my_path
-
+from src.tool_func import equipment_base_json, jewelry_json, equipment_enchant_json, equipment_suffix_json, job_info_dict, job_info_dict2
 
 job_now_list = ["无", "无"]
 
@@ -13,39 +11,35 @@ job_now_list = ["无", "无"]
 def get_base_data():
     """ 获取base数据 """
     base_dict = {}
-    # 打开 JSON 文件
-    with open(get_my_path('data/equipment_base.json'), 'r', encoding='utf-8') as file:
-        data = json.load(file)
-        for job, val in data.items():
-            if job not in base_dict:
-                base_dict[job] = {}
-            for lv, val2 in val.items():
-                for equipment_name, val3 in val2.items():
-                    part = val3["部位"]
-                    if "-" in part:
-                        part = part.split("-", 1)[0]
-                    if part not in base_dict[job]:
-                        base_dict[job][part] = []
-                    base_dict[job][part].append(lv + "-" + equipment_name)
+    data = equipment_base_json
+    for job, val in data.items():
+        if job not in base_dict:
+            base_dict[job] = {}
+        for lv, val2 in val.items():
+            for equipment_name, val3 in val2.items():
+                part = val3["部位"]
+                if "-" in part:
+                    part = part.split("-", 1)[0]
+                if part not in base_dict[job]:
+                    base_dict[job][part] = []
+                base_dict[job][part].append(lv + "-" + equipment_name)
     return base_dict, data
 
 
 def get_jewelry_data():
     """ 获取jewelry数据 """
     jewelry_dict = {}
-    # 打开 JSON 文件
-    with open(get_my_path('data/jewelry.json'), 'r', encoding='utf-8') as file:
-        data = json.load(file)
-        for part, val1 in data.items():
-            if part not in jewelry_dict:
-                jewelry_dict[part] = {}
-            for lv, val2 in val1.items():
-                for jewelry_name, val3 in val2.items():
-                    name_now = lv + "-" + jewelry_name
-                    state_list = []
-                    for state_i, val4 in val3["属性"].items():
-                        state_list.append(str(state_i) + ": " + str(val4))
-                    jewelry_dict[part][name_now] = state_list
+    data = jewelry_json
+    for part, val1 in data.items():
+        if part not in jewelry_dict:
+            jewelry_dict[part] = {}
+        for lv, val2 in val1.items():
+            for jewelry_name, val3 in val2.items():
+                name_now = lv + "-" + jewelry_name
+                state_list = []
+                for state_i, val4 in val3["属性"].items():
+                    state_list.append(str(state_i) + ": " + str(val4))
+                jewelry_dict[part][name_now] = state_list
 
     return jewelry_dict
 
@@ -58,13 +52,12 @@ jewelry_dict = get_jewelry_data()
 def get_enchant_data():
     """ 获取enchant数据 """
     enchant_dict = {}
-    with open(get_my_path('data/equipment_enchant.json'), 'r', encoding='utf-8') as file:
-        data = json.load(file)
-        for type1, val1 in data.items():
-            if type1 not in enchant_dict:
-                enchant_dict[type1] = []
-            for name2, val2 in val1.items():
-                enchant_dict[type1].append(name2)
+    data = equipment_enchant_json
+    for type1, val1 in data.items():
+        if type1 not in enchant_dict:
+            enchant_dict[type1] = []
+        for name2, val2 in val1.items():
+            enchant_dict[type1].append(name2)
 
     return enchant_dict
 
@@ -72,8 +65,7 @@ def get_enchant_data():
 def get_suffix_data():
     """ 获取suffix数据 """
     suffix_dict = {}
-    with open(get_my_path('data/equipment_suffix.json'), 'r', encoding='utf-8') as file:
-        data = json.load(file)
+    data = equipment_suffix_json
 
     for part, val in equipment_base_dict["战士"].items():
         for equipment_now in val:
@@ -93,15 +85,6 @@ suffix_dict, suffix_ori_dict = get_suffix_data()
 
 def update_equipment_options(job):
     """ 根据job的选择更新选项 """
-    job_info_dict = {"剑圣": "战士", "战神": "战士", "箭神": "弓箭", "游侠": "弓箭",
-                     "元素": "法师", "魔导": "法师", "祭司": "牧师", "贤者": "牧师",
-                     "工程": "学者", "炼金": "学者", "呐喊者": "舞娘", "舞者": "舞娘"}
-    job_info_dict2 = {"剑皇": "剑圣", "月之领主": "剑圣", "狂战士": "战神", "毁灭者": "战神",
-                      "狙翎": "箭神", "魔羽": "箭神", "影舞者": "游侠", "风行者": "游侠",
-                      "火舞": "元素", "冰灵": "元素", "时空领主": "魔导", "黑暗女王": "魔导",
-                      "圣骑士": "贤者", "十字军": "贤者", "圣徒": "祭司", "雷神": "祭司",
-                      "重炮手": "工程", "机械大师": "工程", "炼金圣士": "炼金", "药剂师": "炼金",
-                      "黑暗萨满": "呐喊者", "噬魂者": "呐喊者", "刀锋舞者": "舞者", "灵魂舞者": "舞者"}
     star_pre = "40S-海龙"
 
     job_one = job_info_dict2[job]
@@ -169,7 +152,7 @@ def create_equipment_tab():
                 # weapon2_star = gr.Slider(minimum=0, maximum=3, value=0, step=1, label="副手武器升星")
             with gr.Column():
                 weapon2_enchant = gr.Dropdown(atk_en_list, label="副手武器附魔", multiselect=True)
-
+                # weapon2_out = gr.TextArea(label="副手武器属性", lines=4)
         gr.Markdown("---")
         with gr.Row():
             with gr.Column():

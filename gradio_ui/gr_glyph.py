@@ -3,9 +3,8 @@
 """
 
 import gradio as gr
-import json
 
-from src.tool_func import get_my_path
+from src.tool_func import glyph_json
 
 
 def get_glyph_data():
@@ -14,16 +13,14 @@ def get_glyph_data():
     glyph_plus_list = ["无"]
 
     glyph_base_tmp = []
-    # 打开 JSON 文件
-    with open(get_my_path('data/glyph.json'), 'r', encoding='utf-8') as file:
-        data = json.load(file)
-        for lev, em_dic in data["base"].items():
-            for em_name, val in em_dic.items():
-                glyph_base_tmp.append(lev + "-" + em_name)
-        for lev, em_dic in data["plus"].items():
-            for em_name, val in em_dic.items():
-                glyph_plus_list.append(em_name)
-            break
+    data = glyph_json
+    for lev, em_dic in data["base"].items():
+        for em_name, val in em_dic.items():
+            glyph_base_tmp.append(lev + "-" + em_name)
+    for lev, em_dic in data["plus"].items():
+        for em_name, val in em_dic.items():
+            glyph_plus_list.append(em_name)
+        break
 
     # 排序 50放前面
     # glyph_base_list = glyph_base_list + sorted(glyph_base_tmp, key=lambda x: int(x[:2]), reverse=True)

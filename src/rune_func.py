@@ -1,14 +1,7 @@
 """
 计算rune属性
 """
-import json
-
-from src.tool_func import add_dicts, get_my_path
-
-
-# 加载数据
-with open(get_my_path('data/rune.json'), 'r', encoding='utf-8') as file:
-    rune_json = json.load(file)
+from src.tool_func import add_dicts
 
 
 def get_rune_state(rune_names,

@@ -2,14 +2,7 @@
 计算surplus属性
 """
 
-import json
-
-from src.tool_func import add_dicts, get_my_path
-
-
-# 加载数据
-with open(get_my_path('data/surplus.json'), 'r', encoding='utf-8') as file:
-    surplus_json = json.load(file)
+from src.tool_func import add_dicts, surplus_json
 
 
 def get_surplus_state(surplus_levels):

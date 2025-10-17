@@ -1,16 +1,7 @@
 """
 计算card属性
 """
-import json
-
-from src.tool_func import add_dicts, get_my_path
-
-
-# 加载数据
-with open(get_my_path('data/card_skill.json'), 'r', encoding='utf-8') as file:
-    card_skill_json = json.load(file)
-with open(get_my_path('data/card.json'), 'r', encoding='utf-8') as file:
-    card_json = json.load(file)
+from src.tool_func import add_dicts, card_skill_json, card_json
 
 
 def get_card_state(card_skills,

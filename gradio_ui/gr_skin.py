@@ -3,9 +3,8 @@ skin页
 """
 
 import gradio as gr
-import json
 
-from src.tool_func import get_my_path
+from src.tool_func import skin_json
 
 
 def get_skin_data():
@@ -19,25 +18,23 @@ def get_skin_data():
     earrings_skin_list = ["无"]
     ring_skin_list = ["无"]
 
-    # 打开 JSON 文件
-    with open(get_my_path('data/skin.json'), 'r', encoding='utf-8') as file:
-        data = json.load(file)
-        for key, val in data["weapon1_skin"].items():
-            weapon1_skin_list.append(key)
-        for key, val in data["weapon2_skin"].items():
-            weapon2_skin_list.append(key)
-        for key, val in data["wing_skin"].items():
-            wing_skin_list.append(key)
-        for key, val in data["tail_skin"].items():
-            tail_skin_list.append(key)
-        for key, val in data["printing_skin"].items():
-            printing_skin_list.append(key)
-        for key, val in data["necklace_skin"].items():
-            necklace_skin_list.append(key)
-        for key, val in data["earrings_skin"].items():
-            earrings_skin_list.append(key)
-        for key, val in data["ring_skin"].items():
-            ring_skin_list.append(key)
+    data = skin_json
+    for key in data["weapon1_skin"].keys():
+        weapon1_skin_list.append(key)
+    for key in data["weapon2_skin"].keys():
+        weapon2_skin_list.append(key)
+    for key in data["wing_skin"].keys():
+        wing_skin_list.append(key)
+    for key in data["tail_skin"].keys():
+        tail_skin_list.append(key)
+    for key in data["printing_skin"].keys():
+        printing_skin_list.append(key)
+    for key in data["necklace_skin"].keys():
+        necklace_skin_list.append(key)
+    for key in data["earrings_skin"].keys():
+        earrings_skin_list.append(key)
+    for key in data["ring_skin"].keys():
+        ring_skin_list.append(key)
 
     return [weapon1_skin_list, weapon2_skin_list, wing_skin_list,
             tail_skin_list, printing_skin_list, necklace_skin_list,

@@ -27,7 +27,7 @@ def calculate_final_atk_percent(input_num):
 
 
 def calculate_def_percent(input_num):
-    """根据数值计算防御百分比"""
+    """ 根据数值计算防御百分比 """
 
     # 防御计算规则参数（分阶段递增）
     stages = [

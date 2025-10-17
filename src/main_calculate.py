@@ -1,16 +1,15 @@
 """
 计算的主入口
 """
-import json
 import traceback
 import gradio as gr
 import pandas as pd
 
-from src.tool_func import logger, get_my_path
+from src.tool_func import logger, rune_json
 from src.player_base_func import player_base_func
 from src.equipment_func import equipment_func
 from src.glyph_func import glyph_func, glyph_json
-from src.rune_func import rune_func, rune_json
+from src.rune_func import rune_func
 from src.skin_func import skin_func
 from src.surplus_func import surplus_func
 from src.others_func import others_func
@@ -20,11 +19,7 @@ from src.dps_func import dps_func, def_func
 from src.card_func import card_func
 
 from gradio_ui.gr_warning_check import check_rune, check_glyph, check_equipment
-from src.tool_func import add_dicts, job_info_dict, job_info_dict2
-
-# 加载数据
-with open(get_my_path('data/state_rate.json'), 'r', encoding='utf-8') as file:
-    state_rate_json = json.load(file)
+from src.tool_func import add_dicts, job_info_dict, job_info_dict2, state_rate_json
 
 
 def state_calculate(job,

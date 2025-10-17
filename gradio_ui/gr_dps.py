@@ -2,29 +2,15 @@
 属性收益页面
 """
 
-import json
 import gradio as gr
 
-from src.tool_func import get_my_path
+from src.tool_func import boss_json, dps_type_json
 
 
-def get_boss_data():
-    """ 获取boss数据 """
-    with open(get_my_path('data/boss.json'), 'r', encoding='utf-8') as file:
-        boss_dict = json.load(file)
-    return boss_dict
 
-
-def get_dps_type_data():
-    """ 获取职业默认输出属性 """
-    with open(get_my_path('data/dps_type.json'), 'r', encoding='utf-8') as file:
-        dps_type_dict = json.load(file)
-    return dps_type_dict
-
-
-# 直接构建实例
-boss_dict = get_boss_data()
-dps_type_dict = get_dps_type_data()
+# 历史遗留
+boss_dict = boss_json
+dps_type_dict = dps_type_json
 
 
 def update_dps_options(job):

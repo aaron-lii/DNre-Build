@@ -4,7 +4,7 @@
 
 import gradio as gr
 
-from src.tool_func import data_version, remote_version_info
+from src.tool_func import data_version, remote_version_info, JOBS_DROPDOWN_LIST
 
 
 def create_main_tab():
@@ -31,13 +31,7 @@ def create_main_tab():
         
         **最新配装器版本**: {remote_version_info}
         """
-        jobs_list = ["请选择你的职业",
-                     "剑皇", "月之领主", "狂战士", "毁灭者",
-                     "狙翎", "魔羽", "影舞者", "风行者",
-                     "火舞", "冰灵", "时空领主", "黑暗女王",
-                     "圣骑士", "十字军", "圣徒", "雷神",
-                     "重炮手", "机械大师", "炼金圣士", "药剂师",
-                     "黑暗萨满", "噬魂者", "刀锋舞者", "灵魂舞者"]
+        jobs_list = JOBS_DROPDOWN_LIST
         with gr.Row():
             gr.Markdown(text_info)
         with gr.Row():

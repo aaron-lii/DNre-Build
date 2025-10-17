@@ -3,26 +3,14 @@
 """
 
 import gradio as gr
-import json
 
-from src.tool_func import get_my_path
+from src.tool_func import card_skill_json, card_json
 
 
 def get_card_data():
     """ 获取卡片数据 """
-    card_skill_list = []
-    card_list = []
-    # 打开 JSON 文件
-    with open(get_my_path('data/card_skill.json'), 'r', encoding='utf-8') as file:
-        data = json.load(file)
-        for key, val in data.items():
-            card_skill_list.append(key)
-
-    with open(get_my_path('data/card.json'), 'r', encoding='utf-8') as file:
-        data = json.load(file)
-        for key, val in data.items():
-            card_list.append(key)
-
+    card_skill_list = list(card_skill_json.keys())
+    card_list = list(card_json.keys())
     return card_skill_list, card_list
 
 
@@ -56,4 +44,3 @@ def create_card_tab():
                             card_res_list.append(card_now)
 
     return card_skill_res_list, card_res_list
-

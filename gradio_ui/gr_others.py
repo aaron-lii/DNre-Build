@@ -1,29 +1,15 @@
 """
 其他属性
 """
-import json
 import gradio as gr
 
-from src.tool_func import get_my_path
+from src.tool_func import appellation_json, skill_json
 
 
-def get_appellation_data():
-    """ 获取appellation数据 """
-    with open(get_my_path('data/appellation.json'), 'r', encoding='utf-8') as file:
-        appellation_dict = json.load(file)
-    return appellation_dict
 
-
-def get_skill_data():
-    """ 获取skill数据 """
-    with open(get_my_path('data/skill.json'), 'r', encoding='utf-8') as file:
-        skill_dict = json.load(file)
-    return skill_dict
-
-
-# 直接创建实例
-appellation_dict = get_appellation_data()
-skill_dict = get_skill_data()
+# 历史遗留
+appellation_dict = appellation_json
+skill_dict = skill_json
 
 
 def get_team_skill_options():
@@ -112,9 +98,9 @@ def create_others_tab():
         with gr.Row():
             appellation = gr.Dropdown(appellation_list, label="称号")
             appellation_info = gr.TextArea(value="无", label="称号属性预览", lines=4)
-        gr.Markdown("### 时装收集")
+        gr.Markdown("### 时装收藏")
         with gr.Row():
-            skin_collections = gr.Slider(minimum=0, maximum=50, value=0, step=1, label="时装收集数量")
+            skin_collections = gr.Slider(minimum=0, maximum=50, value=0, step=1, label="时装收藏数量")
         gr.Markdown("---")
         gr.Markdown("### 被动技能")
         with gr.Row():
@@ -144,43 +130,18 @@ def create_others_tab():
                     team_skill_now = gr.Slider(minimum=0, maximum=team_skill_list[i * 4 + j][0],
                                                value=0, step=1, label=team_skill_list[i * 4 + j][1])
                     team_skill_res.append(team_skill_now)
-        # with gr.Row():
-        #     team_skill1 = gr.Slider(minimum=0, maximum=team_skill_list[0][0],
-        #                             value=0, step=1, label=team_skill_list[0][1])
-        #     team_skill2 = gr.Slider(minimum=0, maximum=team_skill_list[1][0],
-        #                             value=0, step=1, label=team_skill_list[1][1])
-        #     team_skill3 = gr.Slider(minimum=0, maximum=team_skill_list[2][0],
-        #                             value=0, step=1, label=team_skill_list[2][1])
-        #     team_skill4 = gr.Slider(minimum=0, maximum=team_skill_list[3][0],
-        #                             value=0, step=1, label=team_skill_list[3][1])
-        # with gr.Row():
-        #     team_skill5 = gr.Slider(minimum=0, maximum=team_skill_list[4][0],
-        #                             value=0, step=1, label=team_skill_list[4][1])
-        #     team_skill6 = gr.Slider(minimum=0, maximum=team_skill_list[5][0],
-        #                             value=0, step=1, label=team_skill_list[5][1])
-        #     team_skill7 = gr.Slider(minimum=0, maximum=team_skill_list[6][0],
-        #                             value=0, step=1, label=team_skill_list[6][1])
-        #     team_skill8 = gr.Slider(minimum=0, maximum=team_skill_list[7][0],
-        #                             value=0, step=1, label=team_skill_list[7][1])
         gr.Markdown("### 公会buff")
+        association_skill_res = []
         with gr.Row():
-            association_skill1 = gr.Slider(minimum=0, maximum=association_skill_list[0][0],
-                                           value=0, step=1, label=association_skill_list[0][1])
-            association_skill2 = gr.Slider(minimum=0, maximum=association_skill_list[1][0],
-                                           value=0, step=1, label=association_skill_list[1][1])
-            association_skill3 = gr.Slider(minimum=0, maximum=association_skill_list[2][0],
-                                           value=0, step=1, label=association_skill_list[2][1])
-            association_skill4 = gr.Slider(minimum=0, maximum=association_skill_list[3][0],
-                                           value=0, step=1, label=association_skill_list[3][1])
-
-    res_list = [appellation, skin_collections,
-                skill1, skill2, skill3, skill4, skill5, skill6, skill7, skill8,
-                personal_skill1, personal_skill2, personal_skill3, personal_skill4,
-                ] + team_skill_res + [
-                # team_skill1, team_skill2, team_skill3, team_skill4,
-                # team_skill5, team_skill6, team_skill7, team_skill8,
-                association_skill1, association_skill2, association_skill3, association_skill4]
+            for j in range(4):
+                association_skill_now = gr.Slider(minimum=0, maximum=association_skill_list[j][0],
+                                                  value=0, step=1, label=association_skill_list[j][1])
+                association_skill_res.append(association_skill_now)
 
     appellation.change(update_appellation_options, inputs=[appellation], outputs=[appellation_info])
 
-    return res_list
+    return [appellation, skin_collections,
+            skill1, skill2, skill3, skill4,
+            skill5, skill6, skill7, skill8,
+            personal_skill1, personal_skill2, personal_skill3, personal_skill4,
+            *team_skill_res, *association_skill_res]

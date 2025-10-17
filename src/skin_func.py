@@ -2,14 +2,7 @@
 计算skin属性
 """
 
-import json
-
-from src.tool_func import add_dicts, get_my_path
-
-
-# 加载数据
-with open(get_my_path('data/skin.json'), 'r', encoding='utf-8') as file:
-    skin_json = json.load(file)
+from src.tool_func import add_dicts, skin_json
 
 
 def get_skin_state(skin_names):
@@ -33,4 +26,3 @@ def skin_func(input_list):
     # print(skin_state)
 
     return skin_state
-

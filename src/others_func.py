@@ -2,18 +2,7 @@
 计算others属性
 """
 
-import json
-
-from src.tool_func import add_dicts, get_my_path
-
-
-# 加载数据
-with open(get_my_path('data/appellation.json'), 'r', encoding='utf-8') as file:
-    appellation_json = json.load(file)
-with open(get_my_path('data/collection.json'), 'r', encoding='utf-8') as file:
-    collection_json = json.load(file)
-with open(get_my_path('data/skill.json'), 'r', encoding='utf-8') as file:
-    skill_json = json.load(file)
+from src.tool_func import add_dicts, appellation_json, collection_json, skill_json
 
 
 def get_appellation_state(appellation_name):
@@ -107,5 +96,3 @@ def others_func(job, input_list):
 
     return add_dicts([appellation_state, collection_state]), skill_state, association_state, \
            collection_state
-
-
