@@ -7,6 +7,9 @@ from datetime import datetime
 import gradio as gr
 import time
 
+from src.tool_func import job_info_dict2, job_info_dict
+from gradio_ui.gr_equipment import equipment_base_dict  # 用于加载时动态生成装备choices
+
 
 load_data = []
 
@@ -193,9 +196,41 @@ def load_options(input_file_path):
     if len(load_data) == 0:
         raise gr.Error("加载配置文件出错")
 
+    # 先根据存档内的job生成装备choices，避免第一次加载时报 value not in list of choices
     res_val = []
+    job_val = load_data[0]
+    # indices 1-7 are equipment names
+    equipment_indices = list(range(1, 8))
+    if job_val != "无":
+        try:
+            mid_job = job_info_dict2[job_val]
+            base_job = job_info_dict[mid_job]
+            star_pre = "40S-海龙"
+            part_order = ["主手", "副手", "头盔", "上装", "下装", "手套", "鞋子"]
+            choice_lists = []
+            for part in part_order:
+                star_equipment_list = []
+                for equipment_name in equipment_base_dict[base_job][part]:
+                    if star_pre in equipment_name:
+                        star_equipment_list += [equipment_name + "★", equipment_name + "★★", equipment_name + "★★★"]
+                choice_lists.append(["无"] + sorted(star_equipment_list +
+                                                 equipment_base_dict[mid_job][part] +
+                                                 equipment_base_dict[base_job][part]))
+        except Exception:
+            # 失败则回退，使用默认 choices=["无"], 让后续第二次加载修正
+            choice_lists = [["无"]] * 7
+    else:
+        choice_lists = [["无"]] * 7
+
+    # 构建输出 updates
     for i in range(len(load_data)):
-        res_val.append(gr.update(value=load_data[i]))
+        if i == 0:  # job
+            res_val.append(gr.update(value=load_data[i]))
+        elif i in equipment_indices:
+            # 设备dropdown附上choices
+            res_val.append(gr.update(value=load_data[i], choices=choice_lists[i - 1]))
+        else:
+            res_val.append(gr.update(value=load_data[i]))
 
     return res_val
 
@@ -207,4 +242,5 @@ def load_options2():
     time.sleep(1)
 
     return load_data
+
 

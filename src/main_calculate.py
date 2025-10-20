@@ -408,3 +408,4 @@ def main_func(*args):
             ori_magic_def, gr.update(value=magic_def_increase_df)] + \
            [get_check_format(glyph_state), get_check_format(card_state),
             get_check_format(rune_state), get_check_format(collection_state)]
+
