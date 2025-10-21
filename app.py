@@ -7,6 +7,7 @@ import gradio as gr
 import warnings
 import modelscope_studio.components.antd as antd
 import modelscope_studio.components.base as ms
+import json  # 新增: 用于序列化输入分段长度
 
 from gradio_ui.gr_main import create_main_tab
 from gradio_ui.gr_equipment import create_equipment_tab, update_equipment_options
@@ -113,6 +114,7 @@ with gr.Blocks(theme="base",
     # 属性分析页
     dps_list = create_dps_tab()
 
+    # 原有扁平输入(用于保存与兼容旧逻辑)
     all_input = [job] + \
                 equipment_list + \
                 glyph_base + glyph_plus + \
@@ -122,6 +124,22 @@ with gr.Blocks(theme="base",
                 other_list + \
                 dps_list + \
                 card_skill_list + card_list
+
+    # 动态分段长度元数据: 供 main_func 自动切片, 新增或减少组件只需修改 UI, 无需改计算入口
+    segment_lengths = {
+        "equipment": len(equipment_list),
+        "glyph_base": len(glyph_base),
+        "glyph_plus": len(glyph_plus),
+        "rune": len(rune_list),
+        "skin": len(skin_list),
+        "surplus": len(surplus_list),
+        "other": len(other_list),
+        "dps": len(dps_list),
+        "card_skill": len(card_skill_list),
+        "card": len(card_list)
+    }
+    # 使用隐藏的状态组件传递, 不影响保存逻辑
+    metadata_state = gr.State(json.dumps(segment_lengths, ensure_ascii=False))
 
     with gr.Row():
         submit_btn = gr.Button("计算面板", variant="primary")
@@ -135,12 +153,16 @@ with gr.Blocks(theme="base",
 
     check_text1, check_text2, check_text3, check_text4 = create_out_check()
 
-    submit_btn.click(main_func, inputs=all_input, outputs=[out_text1, out_text2, out_text3, out_text4,
-                                                           out_text5, out_text6, out_text7, out_text8,
-                                                           dps_text, dps_increase_plot,
-                                                           def_text, def_increase_plot,
-                                                           magic_def_text, magic_def_increase_plot,
-                                                           check_text1, check_text2, check_text3, check_text4])
+    # 计算: 传入原始列表 + metadata_state (最后一个参数)
+    submit_btn.click(main_func,
+                     inputs=all_input + [metadata_state],
+                     outputs=[out_text1, out_text2, out_text3, out_text4,
+                            out_text5, out_text6, out_text7, out_text8,
+                            dps_text, dps_increase_plot,
+                            def_text, def_increase_plot,
+                            magic_def_text, magic_def_increase_plot,
+                            check_text1, check_text2, check_text3, check_text4])
+    # 保存仍保持与原来一致, 不包含 metadata_state
     save_btn.click(save_options, inputs=all_input, outputs=save_file)
 
     # 为了让加载配置对实时更新的选项生效，再跑一边，顺序反着是因为gradio的button顺序是反着触发的

@@ -4,6 +4,7 @@
 import traceback
 import gradio as gr
 import pandas as pd
+import json
 
 from src.tool_func import logger, rune_json
 from src.player_base_func import player_base_func
@@ -314,98 +315,115 @@ def get_check_format(input_dict: dict):
 
 def main_func(*args):
     """ 主入口 """
+
+    def _error_return(err_msg: str):
+        # 18 个输出占位, 与正常路径长度一致
+        empty_blocks = [err_msg] + ["" for _ in range(7)]  # 面板8块
+        dps_part = ["出错:" + err_msg, gr.update(value=None)]
+        def_part = ["出错:" + err_msg, gr.update(value=None)]
+        mdef_part = ["出错:" + err_msg, gr.update(value=None)]
+        check_part = ["", "", "", ""]
+        logger.info("输入(错误): " + str(args) + "; 错误: " + err_msg)
+        return empty_blocks + dps_part + def_part + mdef_part + check_part
+
+    # 1. 解析 metadata
+    if not args or not isinstance(args[-1], str):
+        return _error_return("缺少metadata")
     try:
-        job_i = 0
-        equipment_i = job_i + 1
-        glyph_i = equipment_i + 40
-        rune_i = glyph_i + 22
-        skin_i = rune_i + 48
-        surplus_i = skin_i + 9
-        others_i = surplus_i + 16
-        dps_i = others_i + 30
-        card_i = dps_i + 16
+        segment_lengths = json.loads(args[-1])
+    except Exception:
+        return _error_return("metadata解析失败")
 
-        # 获取基础属性
-        job_now = args[job_i]
+    required_keys = ["equipment", "glyph_base", "glyph_plus", "rune",
+                     "skin", "surplus", "other", "dps", "card_skill", "card"]
+    if not all(k in segment_lengths for k in required_keys):
+        return _error_return("metadata缺少必要字段")
+
+    # 去掉 metadata 参数本体
+    args = args[:-1]
+
+    # 2. 根据长度切片
+    pos = 0
+    try:
+        job_now = args[pos]; pos += 1
+        equipment_list = list(args[pos: pos + segment_lengths["equipment"]]); pos += segment_lengths["equipment"]
+        glyph_base_list = list(args[pos: pos + segment_lengths["glyph_base"]]); pos += segment_lengths["glyph_base"]
+        glyph_plus_list = list(args[pos: pos + segment_lengths["glyph_plus"]]); pos += segment_lengths["glyph_plus"]
+        rune_list = list(args[pos: pos + segment_lengths["rune"]]); pos += segment_lengths["rune"]
+        skin_list = list(args[pos: pos + segment_lengths["skin"]]); pos += segment_lengths["skin"]
+        surplus_list = list(args[pos: pos + segment_lengths["surplus"]]); pos += segment_lengths["surplus"]
+        others_list = list(args[pos: pos + segment_lengths["other"]]); pos += segment_lengths["other"]
+        dps_list = list(args[pos: pos + segment_lengths["dps"]]); pos += segment_lengths["dps"]
+        card_skill_list = list(args[pos: pos + segment_lengths["card_skill"]]); pos += segment_lengths["card_skill"]
+        card_list = list(args[pos: pos + segment_lengths["card"]]); pos += segment_lengths["card"]
+    except Exception as e:
+        return _error_return("切片失败:" + str(e))
+
+    # 长度校验 (防止 UI 新增后 metadata 未同步或输入缺失)
+    expected_total = 1 + sum(segment_lengths[k] for k in required_keys)
+    if len(args) != expected_total:
+        return _error_return(f"输入数量({len(args)})与metadata期望({expected_total})不符")
+
+    # 3. 验证职业合法性
+    if job_now in ["无", "请选择你的职业", "", None] or job_now not in job_info_dict2:
+        return _error_return("职业未选择或非法")
+
+    try:
+        # 基础属性
         player_base_state = player_base_func(job_now)
-
-        # 获取装备属性
-        equipment_list = args[equipment_i: glyph_i]
+        # 装备属性
         check_equipment(equipment_list)
         equipment_state = equipment_func(job_now, equipment_list)
-
-        # 获取纹章属性
-        glyph_list = args[glyph_i: rune_i]
-        check_glyph(glyph_list)
-        glyph_state = glyph_func(glyph_list)
-
-        # 获取石板属性
-        rune_list = args[rune_i: skin_i]
+        # 纹章属性
+        glyph_input_combined = list(glyph_base_list) + list(glyph_plus_list)
+        check_glyph(glyph_input_combined)
+        glyph_state = glyph_func(glyph_input_combined)
+        # 石板属性
         check_rune(rune_list)
         rune_state = rune_func(rune_list)
-
-        # 获取时装属性
-        skin_list = args[skin_i: surplus_i]
+        # 时装属性
         skin_state = skin_func(skin_list)
-
-        # 获取综合等级属性
-        surplus_list = args[surplus_i: others_i]
+        # 综合等级
         surplus_state = surplus_func(surplus_list)
-
         # 其他属性
-        others_list = args[others_i: dps_i]
         others_state, skill_state, association_state, collection_state = others_func(job_now, others_list)
-
         # 卡片属性
-        card_list = args[card_i: len(args)]
-        card_state = card_func(card_list)
-
+        card_state = card_func(list(card_skill_list) + list(card_list))
+        # 面板最终属性
         final_state = state_calculate(job_now,
                                       player_base_state, equipment_state, glyph_state,
                                       rune_state, skin_state, surplus_state,
                                       others_state, skill_state, association_state, card_state)
-        # print(final_state)
-
-        # 计算输出期望和防御期望
-        dps_list = args[dps_i: card_i]
-        ori_dps, dps_increase_df = dps_increase_calculate(job_now,
-                                                          player_base_state, equipment_state, glyph_state,
-                                                          rune_state, skin_state, surplus_state,
-                                                          others_state, skill_state, association_state,
-                                                          card_state,
-                                                          final_state, dps_list)
-        ori_def, def_increase_df = def_increase_calculate(job_now,
-                                                          player_base_state, equipment_state, glyph_state,
-                                                          rune_state, skin_state, surplus_state,
-                                                          others_state, skill_state, association_state,
-                                                          card_state,
-                                                          final_state, dps_list, "物防")
-        ori_magic_def, magic_def_increase_df = def_increase_calculate(job_now,
-                                                                      player_base_state, equipment_state, glyph_state,
-                                                                      rune_state, skin_state, surplus_state,
-                                                                      others_state, skill_state, association_state,
-                                                                      card_state,
-                                                                      final_state, dps_list, "魔防")
-
+        # 战斗力/防御收益
+        dps_text, dps_increase_df = dps_increase_calculate(job_now,
+                                                           player_base_state, equipment_state, glyph_state,
+                                                           rune_state, skin_state, surplus_state,
+                                                           others_state, skill_state, association_state,
+                                                           card_state,
+                                                           final_state, dps_list)
+        def_text, def_increase_df = def_increase_calculate(job_now,
+                                                           player_base_state, equipment_state, glyph_state,
+                                                           rune_state, skin_state, surplus_state,
+                                                           others_state, skill_state, association_state,
+                                                           card_state,
+                                                           final_state, dps_list, "物防")
+        magic_def_text, magic_def_increase_df = def_increase_calculate(job_now,
+                                                                       player_base_state, equipment_state, glyph_state,
+                                                                       rune_state, skin_state, surplus_state,
+                                                                       others_state, skill_state, association_state,
+                                                                       card_state,
+                                                                       final_state, dps_list, "魔防")
         out_text_list = get_out_format(job_now, final_state)
-
-    except Exception as e:
+    except Exception:
         error_message = traceback.format_exc()
         print(error_message)
-        out_text_list = ["", "", "", "", "", "", "", ""]
-        ori_dps = "出错啦！"
-        dps_increase_df = None
-        ori_def = "出错啦！"
-        def_increase_df = None
-        ori_magic_def = "出错啦！"
-        magic_def_increase_df = None
+        return _error_return("计算异常")
 
-    logger.info("输入: " + str(args) + "; 输出: " + str(out_text_list))
+    logger.info("输入(OK): job=" + str(job_now) + ", segments=" + json.dumps(segment_lengths, ensure_ascii=False))
 
     return out_text_list + \
-           [ori_dps, gr.update(value=dps_increase_df),
-            ori_def, gr.update(value=def_increase_df),
-            ori_magic_def, gr.update(value=magic_def_increase_df)] + \
+           [dps_text, gr.update(value=dps_increase_df),
+            def_text, gr.update(value=def_increase_df),
+            magic_def_text, gr.update(value=magic_def_increase_df)] + \
            [get_check_format(glyph_state), get_check_format(card_state),
             get_check_format(rune_state), get_check_format(collection_state)]
-
