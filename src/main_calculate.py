@@ -19,8 +19,8 @@ from src.percent_calculate import calculate_def_percent, \
 from src.dps_func import dps_func, def_func
 from src.card_func import card_func
 
-from gradio_ui.gr_warning_check import check_rune, check_glyph, check_equipment
-from src.tool_func import add_dicts, job_info_dict, job_info_dict2, state_rate_json
+from gradio_ui.gr_warning_check import check_rune, check_glyph, check_equipment, check_level
+from src.tool_func import add_dicts, job_info_dict, job_info_dict2, state_rate_json, player_base_state_json
 
 
 def state_calculate(job,
@@ -342,10 +342,11 @@ def main_func(*args):
     # 去掉 metadata 参数本体
     args = args[:-1]
 
-    # 2. 根据长度切片
+    # 2. 切片
     pos = 0
     try:
-        job_now = args[pos]; pos += 1
+        level_candidate = args[pos]; job_candidate = args[pos + 1]
+        level_now = level_candidate; job_now = job_candidate; pos += 2
         equipment_list = list(args[pos: pos + segment_lengths["equipment"]]); pos += segment_lengths["equipment"]
         glyph_base_list = list(args[pos: pos + segment_lengths["glyph_base"]]); pos += segment_lengths["glyph_base"]
         glyph_plus_list = list(args[pos: pos + segment_lengths["glyph_plus"]]); pos += segment_lengths["glyph_plus"]
@@ -359,18 +360,15 @@ def main_func(*args):
     except Exception as e:
         return _error_return("切片失败:" + str(e))
 
-    # 长度校验 (防止 UI 新增后 metadata 未同步或输入缺失)
-    expected_total = 1 + sum(segment_lengths[k] for k in required_keys)
-    if len(args) != expected_total:
-        return _error_return(f"输入数量({len(args)})与metadata期望({expected_total})不符")
 
     # 3. 验证职业合法性
     if job_now in ["无", "请选择你的职业", "", None] or job_now not in job_info_dict2:
         return _error_return("职业未选择或非法")
 
     try:
-        # 基础属性
-        player_base_state = player_base_func(job_now)
+        # 基础属性(带等级)
+        check_level(level_now)
+        player_base_state = player_base_func(job_now, level_now)
         # 装备属性
         check_equipment(equipment_list)
         equipment_state = equipment_func(job_now, equipment_list)
@@ -399,31 +397,30 @@ def main_func(*args):
                                                            player_base_state, equipment_state, glyph_state,
                                                            rune_state, skin_state, surplus_state,
                                                            others_state, skill_state, association_state,
-                                                           card_state,
-                                                           final_state, dps_list)
+                                                           card_state, final_state, dps_list)
         def_text, def_increase_df = def_increase_calculate(job_now,
                                                            player_base_state, equipment_state, glyph_state,
                                                            rune_state, skin_state, surplus_state,
                                                            others_state, skill_state, association_state,
-                                                           card_state,
-                                                           final_state, dps_list, "物防")
+                                                           card_state, final_state, dps_list, def_type="防御")
         magic_def_text, magic_def_increase_df = def_increase_calculate(job_now,
                                                                        player_base_state, equipment_state, glyph_state,
                                                                        rune_state, skin_state, surplus_state,
                                                                        others_state, skill_state, association_state,
-                                                                       card_state,
-                                                                       final_state, dps_list, "魔防")
-        out_text_list = get_out_format(job_now, final_state)
-    except Exception:
-        error_message = traceback.format_exc()
-        print(error_message)
-        return _error_return("计算异常")
+                                                                       card_state, final_state, dps_list, def_type="魔防")
 
-    logger.info("输入(OK): job=" + str(job_now) + ", segments=" + json.dumps(segment_lengths, ensure_ascii=False))
+        out_panel_text_list = get_out_format(job_now, final_state)
+        check_text1 = get_check_format(player_base_state)
+        check_text2 = get_check_format(equipment_state)
+        check_text3 = get_check_format(glyph_state)
+        check_text4 = get_check_format(rune_state)
 
-    return out_text_list + \
-           [dps_text, gr.update(value=dps_increase_df),
-            def_text, gr.update(value=def_increase_df),
-            magic_def_text, gr.update(value=magic_def_increase_df)] + \
-           [get_check_format(glyph_state), get_check_format(card_state),
-            get_check_format(rune_state), get_check_format(collection_state)]
+        logger.info("输入: " + str(args))
+        return out_panel_text_list + \
+               [dps_text, gr.update(value=dps_increase_df),
+                def_text, gr.update(value=def_increase_df),
+                magic_def_text, gr.update(value=magic_def_increase_df),
+                check_text1, check_text2, check_text3, check_text4]
+    except Exception as e:
+        traceback.print_exc()
+        return _error_return(str(e))

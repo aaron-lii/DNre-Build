@@ -4,6 +4,14 @@
 
 import gradio as gr
 
+from src.tool_func import player_base_state_json
+
+
+def check_level(level):
+    """ 检查等级 """
+    if level not in player_base_state_json.keys():
+        gr.Warning("请选择正确的的等级: " + str(level))
+
 
 def check_glyph(glyph_list):
     """ 检查纹章 """

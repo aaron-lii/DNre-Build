@@ -95,7 +95,7 @@ with gr.Blocks(theme="base",
     with ms.Application():
         logo()
 
-    job, save_btn, load_btn, save_file, load_file = create_main_tab()
+    level, job, save_btn, load_btn, save_file, load_file = create_main_tab()
 
     # 装备页
     equipment_list = create_equipment_tab()
@@ -114,8 +114,8 @@ with gr.Blocks(theme="base",
     # 属性分析页
     dps_list = create_dps_tab()
 
-    # 原有扁平输入(用于保存与兼容旧逻辑)
-    all_input = [job] + \
+    # 原有扁平输入(用于保存与兼容旧逻辑)，新增 level 作为第一个输入
+    all_input = [level, job] + \
                 equipment_list + \
                 glyph_base + glyph_plus + \
                 rune_list + \
@@ -125,7 +125,7 @@ with gr.Blocks(theme="base",
                 dps_list + \
                 card_skill_list + card_list
 
-    # 动态分段长度元数据: 供 main_func 自动切片, 新增或减少组件只需修改 UI, 无需改计算入口
+    # 动态分段长度元数据: 供 main_func 自动切片, 新增level不进入metadata，保持兼容
     segment_lengths = {
         "equipment": len(equipment_list),
         "glyph_base": len(glyph_base),
@@ -162,10 +162,10 @@ with gr.Blocks(theme="base",
                             def_text, def_increase_plot,
                             magic_def_text, magic_def_increase_plot,
                             check_text1, check_text2, check_text3, check_text4])
-    # 保存仍保持与原来一致, 不包含 metadata_state
+    # 保存保持与原来一致, 不包含 metadata_state
     save_btn.click(save_options, inputs=all_input, outputs=save_file)
 
-    # 为了让加载配置对实时更新的选项生效，再跑一边，顺序反着是因为gradio的button顺序是反着触发的
+    # 为了让加载配置对实时更新的选项生效, 再跑一遍, 顺序反着是因为gradio的button顺序是反着触发的
     load_btn.click(load_options2, outputs=all_input)
     load_btn.click(load_options, inputs=load_file, outputs=all_input)
 
@@ -175,8 +175,8 @@ with gr.Blocks(theme="base",
 
 if env_now == "exe":
     port_now = 7866
-    print(f"\n\n如果配装器网页没有自动弹出，请手动打开网页: http://127.0.0.1:{port_now}\n"
-          "配装器使用过程中请勿关闭此窗口！\n\n")
+    print(f"\n\n如果配装器网页没有自动弹出, 请手动打开网页: http://127.0.0.1:{port_now}\n"
+          "配装器使用过程中请勿关闭此窗口!\n\n")
 else:
     port_now = None
 

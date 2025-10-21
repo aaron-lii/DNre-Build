@@ -4,7 +4,7 @@
 
 import gradio as gr
 
-from src.tool_func import data_version, remote_version_info, JOBS_DROPDOWN_LIST
+from src.tool_func import data_version, remote_version_info, JOBS_DROPDOWN_LIST, player_base_state_json
 
 
 def create_main_tab():
@@ -31,9 +31,12 @@ def create_main_tab():
         **最新配装器版本**: {remote_version_info}
         """
         jobs_list = JOBS_DROPDOWN_LIST
+        level_list = ["请选择等级"] + sorted(player_base_state_json.keys(), key=lambda x: int(x))
         with gr.Row():
             gr.Markdown(text_info)
         with gr.Row():
+            # 左边等级，右边职业
+            level = gr.Dropdown(level_list, label="等级", value=level_list[-1])
             job = gr.Dropdown(jobs_list, label="职业")
         with gr.Row():
             save_btn = gr.Button("保存配装", variant="secondary")
@@ -42,4 +45,4 @@ def create_main_tab():
             file_output = gr.File(label="下载配装文件", interactive=False)
             file_input = gr.File(label="上传配装文件")
 
-    return job, save_btn, load_btn, file_output, file_input
+    return level, job, save_btn, load_btn, file_output, file_input
