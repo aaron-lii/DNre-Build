@@ -14,13 +14,13 @@ from src.rune_func import rune_func
 from src.skin_func import skin_func
 from src.surplus_func import surplus_func
 from src.others_func import others_func
-from src.percent_calculate import calculate_def_percent, \
+from src.percent_calculate import calculate_defense_percent, \
     calculate_critical_percent, calculate_final_atk_percent
 from src.dps_func import dps_func, def_func
 from src.card_func import card_func
 
 from gradio_ui.gr_warning_check import check_rune, check_glyph, check_equipment, check_level
-from src.tool_func import add_dicts, job_info_dict, job_info_dict2, state_rate_json, player_base_state_json
+from src.tool_func import add_dicts, job_info_dict, job_info_dict2, state_rate_json
 
 
 def state_calculate(job,
@@ -33,7 +33,8 @@ def state_calculate(job,
                     others_state,
                     skill_state,
                     association_state,
-                    card_state):
+                    card_state,
+                    player_level="50"):
     """ 计算 """
     res_state_dict = {"力量": 0, "敏捷": 0, "智力": 0, "体质": 0,
                       "HP": 0, "MP": 0, "MP恢复": 0, "移速": 0,
@@ -150,11 +151,16 @@ def state_calculate(job,
             else:
                 res_state_dict[key] = calculate_dict[key]
 
-    res_state_dict["防御百分比"] = calculate_def_percent(res_state_dict["防御"])
-    res_state_dict["魔防百分比"] = calculate_def_percent(res_state_dict["魔防"])
-    res_state_dict["致命百分比"] = min(calculate_critical_percent(res_state_dict["致命"]) + \
+    # 修改: 使用按等级的百分比计算
+    try:
+        level_int = int(player_level)
+    except Exception:
+        level_int = 50
+    res_state_dict["防御百分比"] = calculate_defense_percent(res_state_dict["防御"], player_level=level_int)
+    res_state_dict["魔防百分比"] = calculate_defense_percent(res_state_dict["魔防"], player_level=level_int)
+    res_state_dict["致命百分比"] = min(calculate_critical_percent(res_state_dict["致命"], player_level=level_int) + \
                                   calculate_dict["致命面板%"] * 100, 90)
-    res_state_dict["最终百分比"] = calculate_final_atk_percent(res_state_dict["最终"])
+    res_state_dict["最终百分比"] = calculate_final_atk_percent(res_state_dict["最终"], player_level=level_int)
 
     return res_state_dict
 
@@ -171,7 +177,8 @@ def dps_increase_calculate(job,
                            association_state,
                            card_state,
                            final_state,
-                           dps_list):
+                           dps_list,
+                           player_level="50"):
     """ 计算攻击属性收益 """
     glyph_plus_dict = {"最大物攻": "三属性物攻", "最大魔攻": "三属性魔攻", "致命": "三属性致命",
                        "力量": "三属性力量", "敏捷": "三属性敏捷", "智力": "三属性智力", "最终": "三属性最终"}
@@ -187,7 +194,7 @@ def dps_increase_calculate(job,
         tmp_state = add_dicts([others_state, glyph_json["plus"]["50A"][key]])
         tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
                                           skin_state, surplus_state, tmp_state, skill_state, association_state,
-                                          card_state,)
+                                          card_state, player_level=player_level)
         dps_now = dps_func(list(dps_list) + [tmp_final_state])
         res_dps_list.append((round((dps_now - ori_dps) / ori_dps * 100, 2), val))
 
@@ -195,7 +202,7 @@ def dps_increase_calculate(job,
         tmp_state = add_dicts([others_state, {key: max(rune_json["atk"][key])}])
         tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
                                           skin_state, surplus_state, tmp_state, skill_state, association_state,
-                                          card_state,)
+                                          card_state, player_level=player_level)
         dps_now = dps_func(list(dps_list) + [tmp_final_state])
         res_dps_list.append((round((dps_now - ori_dps) / ori_dps * 100, 2), val))
 
@@ -233,7 +240,8 @@ def def_increase_calculate(job,
                            card_state,
                            final_state,
                            dps_list,
-                           def_type="物防"):
+                           def_type="物防",
+                           player_level="50"):
     """ 计算防御属性收益 """
     if def_type == "物防":
         glyph_plus_dict = {"防御": "三属性防御", "体质": "三属性体质", "HP": "三属性HP"}
@@ -250,7 +258,7 @@ def def_increase_calculate(job,
         tmp_state = add_dicts([others_state, glyph_json["plus"]["50A"][key]])
         tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
                                           skin_state, surplus_state, tmp_state, skill_state, association_state,
-                                          card_state,)
+                                          card_state, player_level=player_level)
         def_now = def_func(list(dps_list) + [tmp_final_state, def_type])
         res_def_list.append((round((def_now - ori_def) / ori_def * 100, 2), val))
 
@@ -261,7 +269,7 @@ def def_increase_calculate(job,
             tmp_state = add_dicts([others_state, {key: max(rune_json[key2][key])}])
             tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
                                               skin_state, surplus_state, tmp_state, skill_state, association_state,
-                                              card_state,)
+                                              card_state, player_level=player_level)
             def_now = def_func(list(dps_list) + [tmp_final_state, def_type])
             res_def_list.append((round((def_now - ori_def) / ori_def * 100, 2), val))
 
@@ -279,8 +287,9 @@ def def_increase_calculate(job,
     return res_def_text, df
 
 
-def get_out_format(job: str, input_dict: dict):
-    text1 = f"职业: {job}\nHP: {input_dict['HP']}\nMP: {input_dict['MP']}\nMP恢复: {input_dict['MP恢复']}"
+def get_out_format(job: str, input_dict: dict, player_level: str):
+    text1 = (f"等级: {str(player_level)}\n职业: {job}\nHP: {input_dict['HP']}\nMP: {input_dict['MP']}\n"
+             f"MP恢复: {input_dict['MP恢复']}")
     text2 = f"力量: {input_dict['力量']}\n敏捷: {input_dict['敏捷']}\n" \
             f"智力: {input_dict['智力']}\n体质: {input_dict['体质']}"
     text3 = f"物攻: {input_dict['最小物攻']} ~ {input_dict['最大物攻']}\n" \
@@ -391,25 +400,28 @@ def main_func(*args):
         final_state = state_calculate(job_now,
                                       player_base_state, equipment_state, glyph_state,
                                       rune_state, skin_state, surplus_state,
-                                      others_state, skill_state, association_state, card_state)
+                                      others_state, skill_state, association_state, card_state,
+                                      player_level=level_now)
         # 战斗力/防御收益
         dps_text, dps_increase_df = dps_increase_calculate(job_now,
                                                            player_base_state, equipment_state, glyph_state,
                                                            rune_state, skin_state, surplus_state,
                                                            others_state, skill_state, association_state,
-                                                           card_state, final_state, dps_list)
+                                                           card_state, final_state, dps_list, player_level=level_now)
         def_text, def_increase_df = def_increase_calculate(job_now,
                                                            player_base_state, equipment_state, glyph_state,
                                                            rune_state, skin_state, surplus_state,
                                                            others_state, skill_state, association_state,
-                                                           card_state, final_state, dps_list, def_type="防御")
+                                                           card_state, final_state, dps_list, def_type="物防",
+                                                           player_level=level_now)
         magic_def_text, magic_def_increase_df = def_increase_calculate(job_now,
                                                                        player_base_state, equipment_state, glyph_state,
                                                                        rune_state, skin_state, surplus_state,
                                                                        others_state, skill_state, association_state,
-                                                                       card_state, final_state, dps_list, def_type="魔防")
+                                                                       card_state, final_state, dps_list, def_type="魔防",
+                                                                       player_level=level_now)
 
-        out_panel_text_list = get_out_format(job_now, final_state)
+        out_panel_text_list = get_out_format(job_now, final_state, player_level=level_now)
         check_text1 = get_check_format(player_base_state)
         check_text2 = get_check_format(equipment_state)
         check_text3 = get_check_format(glyph_state)
