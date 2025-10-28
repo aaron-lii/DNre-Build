@@ -40,6 +40,25 @@ def get_build_list():
     # 纹章三属性
     for i in range(11):
         res_list.append([f"glyph{i + 1}_p", "无"])
+    # 远征队纹章 (按 glyph2_json 顺序: base 合并后属性各一个下拉 + plus 下拉)
+    try:
+        from src.tool_func import glyph2_json
+        for idx, glyph_name in enumerate(glyph2_json.keys(), start=1):
+            base_dict = glyph2_json[glyph_name]["base"]
+            if glyph_name == "攻击之远征队纹章":
+                # 合并: 物攻 / 魔攻
+                for merged_attr in ["物攻", "魔攻"]:
+                    res_list.append([f"expedition_{idx}_{merged_attr}", "无"])
+            else:
+                for attr in base_dict.keys():
+                    res_list.append([f"expedition_{idx}_{attr}", "无"])
+            res_list.append([f"expedition_{idx}_plus", "无"])  # plus 属性 (内部再合并最小/最大物/魔攻)
+    except Exception:
+        # 兜底结构 (合并后 base=11, plus=4)
+        for i in range(11):
+            res_list.append([f"expedition_base_{i+1}", "无"])
+        for i in range(4):
+            res_list.append([f"expedition_plus_{i+1}", "无"])
     # 石板属性
     for i in range(4):
         for j in range(4):
@@ -124,22 +143,31 @@ def load_options(input_file_path):
             try:
                 load_now = eval(line.strip())
                 if isinstance(load_now, dict):
-                    # 新版存档 (或兼容旧版缺少level/job)
+                    # 新版存档 (或兼容旧版缺少level/job/expedition) -> 逐键填充
                     for i in range(len(default_list)):
                         key = default_list[i][0]
                         if key in load_now:
                             load_data.append(load_now[key])
                         else:
                             load_data.append(default_list[i][1])
-                else:
-                    # 旧版列表格式 (首位是job), 无level
-                    # 构造: level默认 + 原列表
-                    load_data.append(default_list[0][1])  # level 默认
-                    for i in range(len(default_list) - 1):
-                        if i < len(load_now):
-                            load_data.append(load_now[i])
+                elif isinstance(load_now, list):
+                    # 旧的列表格式 (无 level, 也无 expedition) -> 重建映射
+                    # 1) 构造旧键顺序: 默认列表去掉 level 与 expedition_*
+                    old_keys = [k for (k, _v) in default_list if k != "level" and not k.startswith("expedition_")]
+                    # 2) 先构造一个键->值映射 dict, 用默认值填充
+                    tmp_map = {k: v for (k, v) in default_list}
+                    # 3) 将旧列表的第 i 项赋值给 old_keys[i]
+                    for i_val, val in enumerate(load_now):
+                        if i_val < len(old_keys):
+                            tmp_map[old_keys[i_val]] = val
+                    # 4) 组装新的顺序输出: level 用默认, expedition_* 用默认
+                    for (k, v_default) in default_list:
+                        if k == "level":
+                            load_data.append(v_default)  # 老存档无 level, 用默认最高等级
                         else:
-                            load_data.append(default_list[i + 1][1])
+                            load_data.append(tmp_map.get(k, v_default))
+                else:
+                    gr.Warning("未知的存档数据格式")
             except Exception as e:
                 print(e)
                 gr.Warning("加载配置文件出错")

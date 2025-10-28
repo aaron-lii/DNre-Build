@@ -4,7 +4,7 @@
 
 import gradio as gr
 
-from src.tool_func import glyph_json
+from src.tool_func import glyph_json, glyph2_json
 
 # 等级列表（保持原有顺序）
 GLYPH_LEVELS = list(glyph_json["base"].keys())  # 如 ["40A", "50A"]
@@ -71,8 +71,69 @@ def create_glyph_row(idx):
     return level_dd, name_dd, plus_dd, hidden_val
 
 
+def _create_expedition_section():
+    """ 创建远征队纹章栏组件 (4种纹章, 每种的所有 base 属性独立下拉 + 共用一个 plus 下拉) """
+    expedition_base_components = []  # 所有 base 数值选择组件
+    expedition_plus_components = []  # 每种远征纹章的 plus 组件
+
+    # 固定顺序使用 glyph2_json 的键顺序
+    expedition_names = list(glyph2_json.keys())
+    gr.Markdown("### 远征队纹章栏")
+    for idx, glyph_name in enumerate(expedition_names, start=1):
+        data_now = glyph2_json[glyph_name]
+        base_dict = data_now.get("base", {})
+        plus_dict = data_now.get("plus", {})
+        with gr.Group():
+            with gr.Row():
+                if glyph_name == "攻击之远征队纹章":
+                    merged_base = {
+                        "物攻": base_dict.get("最小物攻") or base_dict.get("最大物攻") or [],
+                        "魔攻": base_dict.get("最小魔攻") or base_dict.get("最大魔攻") or []
+                    }
+                    for attr_name, attr_values in merged_base.items():
+                        comp = gr.Dropdown(["无"] + [str(v) for v in attr_values], value="无", label=f"{glyph_name}-{attr_name}")
+                        expedition_base_components.append(comp)
+                else:
+                    for attr_name, attr_values in base_dict.items():
+                        comp = gr.Dropdown(["无"] + [str(v) for v in attr_values], value="无", label=f"{glyph_name}-{attr_name}")
+                        expedition_base_components.append(comp)
+            # plus 属性
+            plus_choices_raw = plus_dict.items()
+            # 合并plus属性中的最小/最大物攻与最小/最大魔攻
+            merged_plus = {}
+            min_phys = plus_dict.get("最小物攻")
+            max_phys = plus_dict.get("最大物攻")
+            if min_phys is not None and max_phys is not None and min_phys == max_phys:
+                merged_plus["物攻"] = min_phys
+            else:
+                if min_phys is not None:
+                    merged_plus["最小物攻"] = min_phys
+                if max_phys is not None:
+                    merged_plus["最大物攻"] = max_phys
+            min_mag = plus_dict.get("最小魔攻")
+            max_mag = plus_dict.get("最大魔攻")
+            if min_mag is not None and max_mag is not None and min_mag == max_mag:
+                merged_plus["魔攻"] = min_mag
+            else:
+                if min_mag is not None:
+                    merged_plus["最小魔攻"] = min_mag
+                if max_mag is not None:
+                    merged_plus["最大魔攻"] = max_mag
+            # 其余属性
+            for k, v in plus_dict.items():
+                if k in ["最小物攻", "最大物攻", "最小魔攻", "最大魔攻"]:
+                    continue
+                merged_plus[k] = v
+            plus_choices = ["无"] + [f"{p_name}+{val}" for p_name, val in merged_plus.items()]
+            plus_comp = gr.Dropdown(plus_choices, value="无", label=f"{glyph_name}-额外属性")
+            expedition_plus_components.append(plus_comp)
+    return expedition_base_components, expedition_plus_components
+
+
 def create_glyph_tab():
-    """ gr页面：返回原保存格式组件列表 (hidden) + 三属性列表，接口兼容 """
+    """ gr页面：返回原保存格式组件列表 (hidden) + 三属性列表 + 远征队组件，接口兼容
+    返回: hidden_components, plus_components (后者包含原三属性 + 远征队 base + 远征队 plus)
+    """
     with gr.Tab("纹章页"):
         gr.Markdown("### 基础纹章栏")
         glyph_rows = []
@@ -82,11 +143,17 @@ def create_glyph_tab():
         gr.Markdown("### 额外纹章栏")
         for i in range(9, 12):
             glyph_rows.append(create_glyph_row(i))
+        gr.Markdown("---")
+        # 新增远征队纹章栏
+        expedition_base_components, expedition_plus_components = _create_expedition_section()
 
     hidden_components = []
     plus_components = []
     for (_lv_dd, _name_dd, plus_dd, hidden_val) in glyph_rows:
         plus_components.append(plus_dd)
         hidden_components.append(hidden_val)
+    # 将远征队 base 与 plus 组件追加到 plus_components 中 (保持主流程 slice 简单)
+    plus_components.extend(expedition_base_components)
+    plus_components.extend(expedition_plus_components)
 
     return hidden_components, plus_components

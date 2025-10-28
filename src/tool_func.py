@@ -192,6 +192,7 @@ boss_json = load_json('boss')
 dps_type_json = load_json('dps_type')
 card_skill_json = load_json('card_skill')
 card_json = load_json('card')
+glyph2_json = load_json('glyph2')
 
 # 额外的派生结构：附魔名称 -> 属性 dict
 enchant_json = {}
