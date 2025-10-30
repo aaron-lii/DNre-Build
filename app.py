@@ -53,7 +53,7 @@ def logo():
                        alt="logo",
                        width=42,
                        height=42)
-            ms.Span(f"DN怀旧服 50级配装模拟器{version}")
+            ms.Span(f"DN怀旧服 配装模拟器{version}")
 
 
 # 自定义 CSS，隐藏默认页脚并添加新的透明背景页脚样式
@@ -104,7 +104,7 @@ with gr.Blocks(theme="base",
     # 卡片页
     card_skill_list, card_list = create_card_tab()
     # 石板页
-    rune_list = create_rune_tab()
+    rune_list, rune_board_levels = create_rune_tab()
     # 时装页
     skin_list = create_skin_tab()
     # 综合等级页
@@ -118,7 +118,7 @@ with gr.Blocks(theme="base",
     all_input = [level, job] + \
                 equipment_list + \
                 glyph_base + glyph_plus + \
-                rune_list + \
+                rune_list + rune_board_levels + \
                 skin_list + \
                 surplus_list + \
                 other_list + \
@@ -131,6 +131,7 @@ with gr.Blocks(theme="base",
         "glyph_base": len(glyph_base),
         "glyph_plus": len(glyph_plus),
         "rune": len(rune_list),
+        "rune_board_levels": len(rune_board_levels),
         "skin": len(skin_list),
         "surplus": len(surplus_list),
         "other": len(other_list),

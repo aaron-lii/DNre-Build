@@ -23,6 +23,27 @@ from gradio_ui.gr_warning_check import check_rune, check_glyph, check_equipment,
 from src.tool_func import add_dicts, job_info_dict, job_info_dict2, state_rate_json
 
 
+def _rune_max_value(stat_name: str):
+    """适配新版 rune_json 结构: level -> {atk:{}, def:{}} ; 返回指定属性的最大可能值(所有等级所有分类)."""
+    max_v = 0
+    try:
+        if isinstance(rune_json, dict):
+            for _lvl, cat_dict in rune_json.items():
+                if not isinstance(cat_dict, dict):
+                    continue
+                for cat in ["atk", "def"]:
+                    sub = cat_dict.get(cat, {})
+                    if isinstance(sub, dict) and stat_name in sub:
+                        vals = sub[stat_name]
+                        if isinstance(vals, list) and vals:
+                            mv = max(vals)
+                            if mv > max_v:
+                                max_v = mv
+    except Exception:
+        pass
+    return max_v
+
+
 def state_calculate(job,
                     player_state,
                     equipment_state,
@@ -199,7 +220,11 @@ def dps_increase_calculate(job,
         res_dps_list.append((round((dps_now - ori_dps) / ori_dps * 100, 2), val))
 
     for key, val in rune_dict.items():
-        tmp_state = add_dicts([others_state, {key: max(rune_json["atk"][key])}])
+        # 旧结构: rune_json["atk"][key] ; 新结构: rune_json[level]["atk"][key]
+        rune_val = _rune_max_value(key)
+        if rune_val <= 0:
+            continue
+        tmp_state = add_dicts([others_state, {key: rune_val}])
         tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
                                           skin_state, surplus_state, tmp_state, skill_state, association_state,
                                           card_state, player_level=player_level)
@@ -263,15 +288,15 @@ def def_increase_calculate(job,
         res_def_list.append((round((def_now - ori_def) / ori_def * 100, 2), val))
 
     for key, val in rune_dict.items():
-        for key2, val2 in rune_json.items():
-            if key not in rune_json[key2]:
-                continue
-            tmp_state = add_dicts([others_state, {key: max(rune_json[key2][key])}])
-            tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
-                                              skin_state, surplus_state, tmp_state, skill_state, association_state,
-                                              card_state, player_level=player_level)
-            def_now = def_func(list(dps_list) + [tmp_final_state, def_type])
-            res_def_list.append((round((def_now - ori_def) / ori_def * 100, 2), val))
+        rune_val = _rune_max_value(key)
+        if rune_val <= 0:
+            continue
+        tmp_state = add_dicts([others_state, {key: rune_val}])
+        tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
+                                          skin_state, surplus_state, tmp_state, skill_state, association_state,
+                                          card_state, player_level=player_level)
+        def_now = def_func(list(dps_list) + [tmp_final_state, def_type])
+        res_def_list.append((round((def_now - ori_def) / ori_def * 100, 2), val))
 
     # 输出格式规整
     res_def_text = f"您面对【{dps_list[-1]}】的【{def_type}】生存力足足有【{ori_def}】! ! !"
@@ -344,7 +369,7 @@ def main_func(*args):
         return _error_return("metadata解析失败")
 
     required_keys = ["equipment", "glyph_base", "glyph_plus", "rune",
-                     "skin", "surplus", "other", "dps", "card_skill", "card"]
+                     "rune_board_levels", "skin", "surplus", "other", "dps", "card_skill", "card"]
     if not all(k in segment_lengths for k in required_keys):
         return _error_return("metadata缺少必要字段")
 
@@ -360,6 +385,7 @@ def main_func(*args):
         glyph_base_list = list(args[pos: pos + segment_lengths["glyph_base"]]); pos += segment_lengths["glyph_base"]
         glyph_plus_list = list(args[pos: pos + segment_lengths["glyph_plus"]]); pos += segment_lengths["glyph_plus"]
         rune_list = list(args[pos: pos + segment_lengths["rune"]]); pos += segment_lengths["rune"]
+        rune_board_levels = list(args[pos: pos + segment_lengths["rune_board_levels"]]); pos += segment_lengths["rune_board_levels"]
         skin_list = list(args[pos: pos + segment_lengths["skin"]]); pos += segment_lengths["skin"]
         surplus_list = list(args[pos: pos + segment_lengths["surplus"]]); pos += segment_lengths["surplus"]
         others_list = list(args[pos: pos + segment_lengths["other"]]); pos += segment_lengths["other"]
@@ -387,7 +413,7 @@ def main_func(*args):
         glyph_state = glyph_func(glyph_input_combined)
         # 石板属性
         check_rune(rune_list)
-        rune_state = rune_func(rune_list)
+        rune_state = rune_func(rune_list)  # rune_board_levels 仅用于保存/展示，不参与计算
         # 时装属性
         skin_state = skin_func(skin_list)
         # 综合等级

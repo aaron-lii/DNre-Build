@@ -7,7 +7,8 @@ from datetime import datetime
 import gradio as gr
 import time
 
-from src.tool_func import job_info_dict2, job_info_dict, player_base_state_json
+from src.tool_func import job_info_dict2, job_info_dict, player_base_state_json, rune_json
+from src.tool_func import card_json
 from gradio_ui.gr_equipment import equipment_base_dict  # 用于加载时动态生成装备choices
 
 
@@ -71,6 +72,18 @@ def get_build_list():
             res_list.append([f"rune{i * 4 + j + 1}_p", "无"])
         for j in range(2):
             res_list.append([f"rune{16 + i * 2 + j + 1}_p", "无"])
+    # 新增: 四个石板板级别等级 (顺序紧随石板数值，计算不使用) - 默认取 rune.json 最低等级
+    try:
+        if isinstance(rune_json, dict) and rune_json:
+            default_rune_level = sorted(rune_json.keys(), key=lambda x: int(x))[0]
+        else:
+            default_rune_level = "50"
+    except Exception:
+        default_rune_level = "50"
+    res_list += [["rune_board_level1", default_rune_level],
+                 ["rune_board_level2", default_rune_level],
+                 ["rune_board_level3", default_rune_level],
+                 ["rune_board_level4", default_rune_level]]
     # 时装
     res_list += [["weapon1_skin", "无"], ["weapon2_skin", "无"],
                  ["wing_skin", "无"], ["tail_skin", "无"], ["printing_skin", "无"],
@@ -100,7 +113,9 @@ def get_build_list():
 
     for i in range(12):
         res_list.append([f"card_skill_{i + 1}", 0])
-    for i in range(57):
+    # 动态卡片数量
+    card_total = len(card_json.keys()) if isinstance(card_json, dict) else 0
+    for i in range(card_total):
         res_list.append([f"card_{i + 1}", "无"])
 
     return res_list
