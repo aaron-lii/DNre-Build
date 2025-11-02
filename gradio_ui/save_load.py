@@ -235,6 +235,6 @@ def load_options2():
     """ 二次加载配置文件 """
     global load_data
     # 不等待的话gradio来不及更新
-    time.sleep(1)
+    time.sleep(2)
 
     return load_data
