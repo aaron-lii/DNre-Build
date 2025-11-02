@@ -25,11 +25,7 @@ def create_main_tab():
         ### 备注
         1. MP恢复、移速、硬直眩晕抵抗不做计算
         2. 如有需要的职业buff、称号、装备、附魔未收录的，请联系作者
-        
-        
-        <span style="color:red; font-weight:bold;">
-        未完成部分：技能buff数据未更新，60石板数据不完整
-        </span>
+
         
         **当前数据版本**: {data_version}；**作者**: MXX；**数据支持**: 阿笑
         
