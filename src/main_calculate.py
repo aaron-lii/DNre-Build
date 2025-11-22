@@ -212,7 +212,7 @@ def dps_increase_calculate(job,
     res_dps_list = []
 
     for key, val in glyph_plus_dict.items():
-        tmp_state = add_dicts([others_state, glyph_json["plus"]["50A"][key]])
+        tmp_state = add_dicts([others_state, glyph_json["plus"][player_level + "A"][key]])
         tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
                                           skin_state, surplus_state, tmp_state, skill_state, association_state,
                                           card_state, player_level=player_level)
@@ -280,7 +280,7 @@ def def_increase_calculate(job,
     res_def_list = []
 
     for key, val in glyph_plus_dict.items():
-        tmp_state = add_dicts([others_state, glyph_json["plus"]["50A"][key]])
+        tmp_state = add_dicts([others_state, glyph_json["plus"][player_level + "A"][key]])
         tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
                                           skin_state, surplus_state, tmp_state, skill_state, association_state,
                                           card_state, player_level=player_level)
@@ -448,10 +448,10 @@ def main_func(*args):
                                                                        player_level=level_now)
 
         out_panel_text_list = get_out_format(job_now, final_state, player_level=level_now)
-        check_text1 = get_check_format(player_base_state)
-        check_text2 = get_check_format(equipment_state)
-        check_text3 = get_check_format(glyph_state)
-        check_text4 = get_check_format(rune_state)
+        check_text1 = get_check_format(glyph_state)
+        check_text2 = get_check_format(card_state)
+        check_text3 = get_check_format(rune_state)
+        check_text4 = get_check_format(collection_state)
 
         logger.info("输入: " + str(args))
         return out_panel_text_list + \
