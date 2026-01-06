@@ -100,7 +100,7 @@ def get_build_list():
     for i in range(4):
         res_list.append([f"personal_skill{i + 1}", 0])
     # 团队buff
-    for i in range(12):
+    for i in range(16):
         res_list.append([f"team_skill{i + 1}", 0])
     # 公会buff
     for i in range(4):

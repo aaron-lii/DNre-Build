@@ -15,7 +15,7 @@ skill_dict = skill_json
 def get_team_skill_options():
     """ 生成团队buff列表 """
     res_list = []
-    for _ in range(12):
+    for _ in range(16):
         res_list.append([0, "无"])
 
     skill_list_now = list(skill_dict["团队buff"].keys())
@@ -124,7 +124,7 @@ def create_others_tab():
             personal_skill4 = gr.Slider(minimum=0, maximum=0, value=0, step=1, label="无")
         gr.Markdown("### 团队buff")
         team_skill_res = []
-        for i in range(3):
+        for i in range(4):
             with gr.Row():
                 for j in range(4):
                     team_skill_now = gr.Slider(minimum=0, maximum=team_skill_list[i * 4 + j][0],
