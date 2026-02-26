@@ -4,7 +4,9 @@
 
 import gradio as gr
 
-from src.tool_func import rune_json
+from src.tool_func import rune_json, load_json
+
+core_rune_json = load_json("core_rune")
 
 
 def get_rune_data(default_level: str = None):
@@ -81,13 +83,58 @@ def update_board_def(level, *names):
     return outputs
 
 
+def _get_core_rune_attr_choices():
+    if isinstance(core_rune_json, dict) and core_rune_json:
+        return ["无"] + list(core_rune_json.keys())
+    return ["无"]
+
+
+def _get_core_rune_value_choices(attr_name):
+    if not isinstance(core_rune_json, dict) or attr_name in ["无", "", None]:
+        return ["无"], ["无"]
+    data = core_rune_json.get(attr_name, {})
+    ratio_vals = data.get("转换比例", [])
+    coeff_vals = data.get("转换系数", [])
+    ratio_choices = [f"{i + 1} | {v}" for i, v in enumerate(ratio_vals)] or ["无"]
+    coeff_choices = [f"{i + 1} | {v}" for i, v in enumerate(coeff_vals)] or ["无"]
+    return ratio_choices, coeff_choices
+
+
+def update_core_rune_attr(attr_name):
+    ratio_choices, coeff_choices = _get_core_rune_value_choices(attr_name)
+    return gr.update(choices=ratio_choices, value=ratio_choices[0]), \
+           gr.update(choices=coeff_choices, value=coeff_choices[0])
+
+
+def sync_core_rune_coeff(attr_name, ratio_value):
+    ratio_choices, coeff_choices = _get_core_rune_value_choices(attr_name)
+    if ratio_value in ratio_choices and ratio_value != "无":
+        idx = ratio_choices.index(ratio_value)
+        if 0 <= idx < len(coeff_choices):
+            return gr.update(choices=coeff_choices, value=coeff_choices[idx])
+    return gr.update(choices=coeff_choices, value=coeff_choices[0])
+
+
 def create_rune_tab():
-    """ 为每块石板新增 单一等级下拉 (4 个板), 不改变返回格式: 24 名称 + 24 数值。额外返回4个板等级组件供保存/加载使用 """
+    """ 为每块石板新增 单一等级下拉 (4 个板), 并新增源铸石板选项。 """
     tmp_list = ["无"]
     atk_rune_name_list, def_rune_name_list, level_keys = get_rune_data()
     default_level = level_keys[0] if level_keys else "50"
+    core_attr_choices = _get_core_rune_attr_choices()
+    core_default_attr = core_attr_choices[0]
+    core_ratio_choices, core_coeff_choices = _get_core_rune_value_choices(core_default_attr)
+    core_enchant_choices = [str(i) for i in range(0, 11)]
 
     with gr.Tab("石板页"):
+        with gr.Column():
+            gr.Markdown("### 源铸石板")
+            with gr.Row():
+                core_rune_attr = gr.Dropdown(core_attr_choices, value=core_default_attr, label="转换属性")
+                core_rune_ratio = gr.Dropdown(core_ratio_choices, value=core_ratio_choices[0], label="转换比例")
+                core_rune_coeff = gr.Dropdown(core_coeff_choices, value=core_coeff_choices[0], label="转换系数")
+                core_rune_enchant = gr.Dropdown(core_enchant_choices, value="0", label="强化等级")
+        gr.Markdown("---")
+
         with gr.Row():
             # 攻击石板1
             with gr.Column():
@@ -206,8 +253,12 @@ def create_rune_tab():
     for name_comp, val_comp in zip(def_board2_names, def_board2_vals):
         name_comp.change(update_def_rune, inputs=[def_board2_level, name_comp], outputs=[name_comp, val_comp])
 
+    # 源铸石板联动
+    core_rune_attr.change(update_core_rune_attr, inputs=[core_rune_attr], outputs=[core_rune_ratio, core_rune_coeff])
+
     # 返回顺序保持不变 (仅名称 + 数值)
     rune_return_list = atk_board1_names + atk_board2_names + def_board1_names + def_board2_names + \
-           atk_board1_vals + atk_board2_vals + def_board1_vals + def_board2_vals
+           atk_board1_vals + atk_board2_vals + def_board1_vals + def_board2_vals + \
+           [core_rune_attr, core_rune_ratio, core_rune_coeff, core_rune_enchant]
     board_levels = [atk_board1_level, atk_board2_level, def_board1_level, def_board2_level]
     return rune_return_list, board_levels

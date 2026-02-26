@@ -20,7 +20,9 @@ from src.dps_func import dps_func, def_func
 from src.card_func import card_func
 
 from gradio_ui.gr_warning_check import check_rune, check_glyph, check_equipment, check_level
-from src.tool_func import add_dicts, job_info_dict, job_info_dict2, state_rate_json
+from src.tool_func import add_dicts, job_info_dict, job_info_dict2, state_rate_json, load_json
+
+core_rune_json = load_json("core_rune")
 
 
 def _rune_max_value(stat_name: str):
@@ -44,6 +46,122 @@ def _rune_max_value(stat_name: str):
     return max_v
 
 
+def _parse_core_rune_value(raw_val):
+    """解析源铸石板下拉值，兼容 `等级 | 数值` 格式。返回(level_index, value)。"""
+    if raw_val in [None, "", "无"]:
+        return None, None
+    try:
+        text = str(raw_val).strip()
+        level_index = None
+        if "|" in text:
+            level_text, text = text.split("|", 1)
+            text = text.strip()
+            level_index = int(float(level_text.strip())) - 1
+        return level_index, float(text)
+    except Exception:
+        return None, None
+
+
+def _extract_core_rune_info(rune_list):
+    """从 rune_list 提取源铸石板配置。"""
+    if len(rune_list) < 52:
+        return None
+    attr = rune_list[48]
+    ratio_level_index, ratio = _parse_core_rune_value(rune_list[49])
+    _coeff_level_index, coeff = _parse_core_rune_value(rune_list[50])
+    if attr in [None, "", "无"] or ratio is None or coeff is None:
+        return None
+    if "→" not in str(attr):
+        return None
+    src, dst = str(attr).split("→", 1)
+    src = src.strip()
+    dst = dst.strip()
+    if src == "" or dst == "":
+        return None
+    max_deduct = None
+    try:
+        attr_data = core_rune_json.get(str(attr), {}) if isinstance(core_rune_json, dict) else {}
+        max_deduct_list = attr_data.get("最大扣除值", []) if isinstance(attr_data, dict) else []
+        if isinstance(max_deduct_list, list) and max_deduct_list:
+            if ratio_level_index is None or ratio_level_index < 0 or ratio_level_index >= len(max_deduct_list):
+                ratio_level_index = 0
+            max_deduct = float(max_deduct_list[ratio_level_index])
+    except Exception:
+        max_deduct = None
+    return {
+        "source": src,
+        "target": dst,
+        "ratio": ratio,
+        "coefficient": coeff,
+        "max_deduct": max_deduct,
+    }
+
+
+def _apply_core_rune_convert(calculate_dict, core_rune_info):
+    """应用源铸石板转换：减源属性，加目标属性。"""
+    if not core_rune_info:
+        return
+
+    source = core_rune_info["source"]
+    target = core_rune_info["target"]
+    ratio = core_rune_info["ratio"]
+    coefficient = core_rune_info["coefficient"]
+    max_deduct = core_rune_info.get("max_deduct")
+    if max_deduct in [None, "", "无"]:
+        max_deduct = float("inf")
+    else:
+        try:
+            max_deduct = float(max_deduct)
+        except Exception:
+            max_deduct = float("inf")
+
+    if ratio <= 0 or coefficient < 0:
+        return
+
+    # 1) 减少源属性
+    if source == "物攻":
+        src_min_key, src_max_key = "最小物攻", "最大物攻"
+        src_min = calculate_dict.get(src_min_key, 0)
+        src_max = calculate_dict.get(src_max_key, 0)
+        deduct_min = int(min(src_min * ratio, max_deduct))
+        deduct_max = int(min(src_max * ratio, max_deduct))
+        calculate_dict[src_min_key] = src_min - deduct_min
+        calculate_dict[src_max_key] = src_max - deduct_max
+        source_for_convert = int(min(int((src_min + src_max) / 2) * ratio, max_deduct))
+    elif source == "魔攻":
+        src_min_key, src_max_key = "最小魔攻", "最大魔攻"
+        src_min = calculate_dict.get(src_min_key, 0)
+        src_max = calculate_dict.get(src_max_key, 0)
+        deduct_min = int(min(src_min * ratio, max_deduct))
+        deduct_max = int(min(src_max * ratio, max_deduct))
+        calculate_dict[src_min_key] = src_min - deduct_min
+        calculate_dict[src_max_key] = src_max - deduct_max
+        source_for_convert = int(min(int((src_min + src_max) / 2) * ratio, max_deduct))
+    else:
+        source_key_map = {"防御": "防御", "魔防": "魔防", "致命": "致命"}
+        source_key = source_key_map.get(source)
+        if source_key is None:
+            return
+        source_now = calculate_dict.get(source_key, 0)
+        source_for_convert = int(min(source_now * ratio, max_deduct))
+        calculate_dict[source_key] = source_now - source_for_convert
+
+    # 2) 增加目标属性
+    gain_value = int(source_for_convert * coefficient)
+    if target == "物攻":
+        calculate_dict["最小物攻"] = calculate_dict.get("最小物攻", 0) + gain_value
+        calculate_dict["最大物攻"] = calculate_dict.get("最大物攻", 0) + gain_value
+    elif target == "魔攻":
+        calculate_dict["最小魔攻"] = calculate_dict.get("最小魔攻", 0) + gain_value
+        calculate_dict["最大魔攻"] = calculate_dict.get("最大魔攻", 0) + gain_value
+    else:
+        target_key_map = {"防御": "防御", "魔防": "魔防", "致命": "致命"}
+        target_key = target_key_map.get(target)
+        if target_key is None:
+            return
+        calculate_dict[target_key] = calculate_dict.get(target_key, 0) + gain_value
+
+
 def state_calculate(job,
                     player_state,
                     equipment_state,
@@ -55,7 +173,8 @@ def state_calculate(job,
                     skill_state,
                     association_state,
                     card_state,
-                    player_level="50"):
+                    player_level="50",
+                    core_rune_info=None):
     """ 计算 """
     res_state_dict = {"力量": 0, "敏捷": 0, "智力": 0, "体质": 0,
                       "HP": 0, "MP": 0, "MP恢复": 0, "移速": 0,
@@ -164,6 +283,7 @@ def state_calculate(job,
                                          (1 + calculate_skill_dict[state_name_now + "%"])
     for state_name_now in ["致命", "致命面板%", "光攻%", "暗攻%", "火攻%", "水攻%"]:
         calculate_dict[state_name_now] += calculate_skill_dict[state_name_now]
+    _apply_core_rune_convert(calculate_dict, core_rune_info)
 
     for key, val in res_state_dict.items():
         if key in calculate_dict:
@@ -199,7 +319,8 @@ def dps_increase_calculate(job,
                            card_state,
                            final_state,
                            dps_list,
-                           player_level="50"):
+                           player_level="50",
+                           core_rune_info=None):
     """ 计算攻击属性收益 """
     glyph_plus_dict = {"最大物攻": "三属性物攻", "最大魔攻": "三属性魔攻", "致命": "三属性致命",
                        "力量": "三属性力量", "敏捷": "三属性敏捷", "智力": "三属性智力", "最终": "三属性最终"}
@@ -215,7 +336,7 @@ def dps_increase_calculate(job,
         tmp_state = add_dicts([others_state, glyph_json["plus"][player_level + "A"][key]])
         tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
                                           skin_state, surplus_state, tmp_state, skill_state, association_state,
-                                          card_state, player_level=player_level)
+                                          card_state, player_level=player_level, core_rune_info=core_rune_info)
         dps_now = dps_func(list(dps_list) + [tmp_final_state])
         res_dps_list.append((round((dps_now - ori_dps) / ori_dps * 100, 2), val))
 
@@ -227,7 +348,7 @@ def dps_increase_calculate(job,
         tmp_state = add_dicts([others_state, {key: rune_val}])
         tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
                                           skin_state, surplus_state, tmp_state, skill_state, association_state,
-                                          card_state, player_level=player_level)
+                                          card_state, player_level=player_level, core_rune_info=core_rune_info)
         dps_now = dps_func(list(dps_list) + [tmp_final_state])
         res_dps_list.append((round((dps_now - ori_dps) / ori_dps * 100, 2), val))
 
@@ -266,7 +387,8 @@ def def_increase_calculate(job,
                            final_state,
                            dps_list,
                            def_type="物防",
-                           player_level="50"):
+                           player_level="50",
+                           core_rune_info=None):
     """ 计算防御属性收益 """
     if def_type == "物防":
         glyph_plus_dict = {"防御": "三属性防御", "体质": "三属性体质", "HP": "三属性HP"}
@@ -283,7 +405,7 @@ def def_increase_calculate(job,
         tmp_state = add_dicts([others_state, glyph_json["plus"][player_level + "A"][key]])
         tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
                                           skin_state, surplus_state, tmp_state, skill_state, association_state,
-                                          card_state, player_level=player_level)
+                                          card_state, player_level=player_level, core_rune_info=core_rune_info)
         def_now = def_func(list(dps_list) + [tmp_final_state, def_type])
         res_def_list.append((round((def_now - ori_def) / ori_def * 100, 2), val))
 
@@ -294,7 +416,7 @@ def def_increase_calculate(job,
         tmp_state = add_dicts([others_state, {key: rune_val}])
         tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
                                           skin_state, surplus_state, tmp_state, skill_state, association_state,
-                                          card_state, player_level=player_level)
+                                          card_state, player_level=player_level, core_rune_info=core_rune_info)
         def_now = def_func(list(dps_list) + [tmp_final_state, def_type])
         res_def_list.append((round((def_now - ori_def) / ori_def * 100, 2), val))
 
@@ -414,6 +536,7 @@ def main_func(*args):
         # 石板属性
         check_rune(rune_list)
         rune_state = rune_func(rune_list)  # rune_board_levels 仅用于保存/展示，不参与计算
+        core_rune_info = _extract_core_rune_info(rune_list)
         # 时装属性
         skin_state = skin_func(skin_list)
         # 综合等级
@@ -427,25 +550,27 @@ def main_func(*args):
                                       player_base_state, equipment_state, glyph_state,
                                       rune_state, skin_state, surplus_state,
                                       others_state, skill_state, association_state, card_state,
-                                      player_level=level_now)
+                                      player_level=level_now, core_rune_info=core_rune_info)
         # 战斗力/防御收益
         dps_text, dps_increase_df = dps_increase_calculate(job_now,
                                                            player_base_state, equipment_state, glyph_state,
                                                            rune_state, skin_state, surplus_state,
                                                            others_state, skill_state, association_state,
-                                                           card_state, final_state, dps_list, player_level=level_now)
+                                                           card_state, final_state, dps_list, player_level=level_now,
+                                                           core_rune_info=core_rune_info)
         def_text, def_increase_df = def_increase_calculate(job_now,
                                                            player_base_state, equipment_state, glyph_state,
                                                            rune_state, skin_state, surplus_state,
                                                            others_state, skill_state, association_state,
                                                            card_state, final_state, dps_list, def_type="物防",
-                                                           player_level=level_now)
+                                                           player_level=level_now, core_rune_info=core_rune_info)
         magic_def_text, magic_def_increase_df = def_increase_calculate(job_now,
-                                                                       player_base_state, equipment_state, glyph_state,
-                                                                       rune_state, skin_state, surplus_state,
-                                                                       others_state, skill_state, association_state,
-                                                                       card_state, final_state, dps_list, def_type="魔防",
-                                                                       player_level=level_now)
+                                                                        player_base_state, equipment_state, glyph_state,
+                                                                        rune_state, skin_state, surplus_state,
+                                                                        others_state, skill_state, association_state,
+                                                                        card_state, final_state, dps_list, def_type="魔防",
+                                                                        player_level=level_now,
+                                                                        core_rune_info=core_rune_info)
 
         out_panel_text_list = get_out_format(job_now, final_state, player_level=level_now)
         check_text1 = get_check_format(glyph_state)

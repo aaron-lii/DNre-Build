@@ -72,6 +72,9 @@ def get_build_list():
             res_list.append([f"rune{i * 4 + j + 1}_p", "无"])
         for j in range(2):
             res_list.append([f"rune{16 + i * 2 + j + 1}_p", "无"])
+    # 源铸石板
+    res_list += [["core_rune_attr", "无"], ["core_rune_ratio", "无"],
+                 ["core_rune_coeff", "无"], ["core_rune_enhance", "0"]]
     # 新增: 四个石板板级别等级 (顺序紧随石板数值，计算不使用) - 默认取 rune.json 最低等级
     try:
         if isinstance(rune_json, dict) and rune_json:
