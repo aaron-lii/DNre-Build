@@ -3,6 +3,7 @@
 """
 print("DNre配装器启动中...")
 import os
+import inspect
 import gradio as gr
 import warnings
 import modelscope_studio.components.antd as antd
@@ -207,4 +208,11 @@ if gradio_major_version >= 6:
     launch_kwargs["theme"] = "base"
     launch_kwargs["css"] = custom_css
 
-demo.launch(**launch_kwargs)
+launch_signature = inspect.signature(demo.launch)
+supported_launch_kwargs = {
+    key: value
+    for key, value in launch_kwargs.items()
+    if key in launch_signature.parameters
+}
+
+demo.launch(**supported_launch_kwargs)

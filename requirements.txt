@@ -1,5 +1,5 @@
 gradio==5.20.1
-modelscope_studio
+modelscope_studio<2
 requests
 huggingface_hub<1.0
 eval_type_backport
