@@ -15,7 +15,7 @@ from src.skin_func import skin_func
 from src.surplus_func import surplus_func
 from src.others_func import others_func
 from src.percent_calculate import calculate_defense_percent, \
-    calculate_critical_percent, calculate_final_atk_percent
+    calculate_critical_percent, calculate_critical_damage_percent, calculate_final_atk_percent
 from src.dps_func import dps_func, def_func
 from src.card_func import card_func
 
@@ -23,6 +23,32 @@ from gradio_ui.gr_warning_check import check_rune, check_glyph, check_equipment,
 from src.tool_func import add_dicts, job_info_dict, job_info_dict2, state_rate_json, load_json
 
 core_rune_json = load_json("core_rune")
+
+
+def _glyph_level_key(player_level: str):
+    """将当前人物等级映射到可用的纹章档位键。"""
+    try:
+        level_num = int(float(player_level))
+    except Exception:
+        level_num = 60
+
+    available = []
+    if isinstance(glyph_json, dict):
+        plus_dict = glyph_json.get("plus", {})
+        if isinstance(plus_dict, dict):
+            for key in plus_dict.keys():
+                try:
+                    available.append((int(str(key).rstrip("A")), key))
+                except Exception:
+                    continue
+    if not available:
+        return "60A"
+
+    available.sort()
+    for num, key in reversed(available):
+        if level_num >= num:
+            return key
+    return available[0][1]
 
 
 def _rune_max_value(stat_name: str):
@@ -44,6 +70,320 @@ def _rune_max_value(stat_name: str):
     except Exception:
         pass
     return max_v
+
+
+def _split_dps_analysis_inputs(dps_list):
+    """拆分战斗配置与收益分析配置。"""
+    combat_list = list(dps_list[:16])
+    analysis_mode = dps_list[16] if len(dps_list) > 16 else "单槽替换"
+    replace_slot = dps_list[17] if len(dps_list) > 17 else "石板词条"
+    return combat_list, analysis_mode, replace_slot
+
+
+def _build_rune_slot_defs(rune_list, rune_board_levels, rune_type):
+    """构建指定类型石板词条定义。"""
+    if rune_type == "atk":
+        board_indices = [0, 1]
+        base_board_no = 1
+    else:
+        board_indices = [2, 3]
+        base_board_no = 1
+
+    res = []
+    for offset, board_index in enumerate(board_indices):
+        board_level = str(rune_board_levels[board_index]) if board_index < len(rune_board_levels) else "50"
+        start = board_index * 6
+        for slot_in_board in range(6):
+            slot_index = start + slot_in_board
+            rune_name = rune_list[slot_index] if slot_index < len(rune_list) else "无"
+            rune_value = rune_list[24 + slot_index] if 24 + slot_index < len(rune_list) else "无"
+            res.append({
+                "slot_index": slot_index,
+                "board_index": board_index,
+                "board_no": base_board_no + offset,
+                "slot_no": slot_in_board + 1,
+                "level": board_level,
+                "name": rune_name,
+                "value": rune_value,
+                "rune_type": rune_type,
+            })
+    return res
+
+
+def _get_rune_value_tier(level, rune_type, rune_name, raw_value):
+    """根据当前选中的石板属性值返回对应档位。"""
+    try:
+        values = rune_json[str(level)][rune_type][rune_name]
+    except Exception:
+        return None, None
+    if not isinstance(values, list) or not values:
+        return None, None
+
+    try:
+        value_num = int(float(raw_value))
+    except Exception:
+        return None, None
+
+    if value_num in values:
+        idx = values.index(value_num)
+    else:
+        idx = min(range(len(values)), key=lambda i: abs(values[i] - value_num))
+    return idx, values
+
+
+def _replace_rune_slot(rune_list, slot_index, new_name, new_value):
+    """替换单个石板词条。"""
+    tmp_rune_list = list(rune_list)
+    tmp_rune_list[slot_index] = new_name
+    tmp_rune_list[24 + slot_index] = str(new_value) if new_name not in ["无", "", None] else "无"
+    return tmp_rune_list
+
+
+def _describe_rune_slot(slot_info):
+    if not slot_info:
+        return "无"
+    rune_type_text = "攻击石板" if slot_info["rune_type"] == "atk" else "防御石板"
+    return (f"{rune_type_text}{slot_info['board_no']} 词条{slot_info['slot_no']} "
+            f"[{slot_info['level']}级 {slot_info['name']} {slot_info['value']}]")
+
+
+def _build_glyph_plus_slot_defs(glyph_names_list, glyph_p_names_list):
+    """构建普通三属性纹章槽位定义。"""
+    res = []
+    for idx, (glyph_name, plus_name) in enumerate(zip(glyph_names_list, glyph_p_names_list)):
+        if glyph_name in ["无", "", None]:
+            continue
+        try:
+            level_key, base_name = str(glyph_name).split("-", 1)
+        except Exception:
+            continue
+        res.append({
+            "slot_index": idx,
+            "level": level_key,
+            "base_name": base_name,
+            "plus_name": plus_name,
+        })
+    return res
+
+
+def _replace_glyph_plus_slot(glyph_plus_list, slot_index, new_plus_name):
+    tmp_glyph_plus_list = list(glyph_plus_list)
+    tmp_glyph_plus_list[slot_index] = new_plus_name
+    return tmp_glyph_plus_list
+
+
+def _describe_glyph_slot(slot_info):
+    if not slot_info:
+        return "无"
+    return f"纹章{slot_info['slot_index'] + 1} [{slot_info['level']}级 {slot_info['base_name']} / {slot_info['plus_name']}]"
+
+
+def _recalculate_glyph_final_state(job,
+                                   player_state,
+                                   equipment_state,
+                                   glyph_names_list,
+                                   temp_glyph_plus_list,
+                                   rune_state,
+                                   skin_state,
+                                   surplus_state,
+                                   others_state,
+                                   skill_state,
+                                   association_state,
+                                   card_state,
+                                   expedition_part,
+                                   player_level,
+                                   core_rune_info):
+    temp_glyph_state = glyph_func(list(glyph_names_list) + list(temp_glyph_plus_list) + list(expedition_part), player_level=player_level)
+    return state_calculate(job, player_state, equipment_state, temp_glyph_state, rune_state,
+                           skin_state, surplus_state, others_state, skill_state, association_state,
+                           card_state, player_level=player_level, core_rune_info=core_rune_info)
+
+
+def _find_least_valuable_glyph_slot(job,
+                                    player_state,
+                                    equipment_state,
+                                    glyph_names_list,
+                                    glyph_p_names_list,
+                                    expedition_part,
+                                    rune_state,
+                                    skin_state,
+                                    surplus_state,
+                                    others_state,
+                                    skill_state,
+                                    association_state,
+                                    card_state,
+                                    player_level,
+                                    core_rune_info,
+                                    score_func,
+                                    base_score):
+    """找到当前收益最低的已装备三属性纹章槽位。"""
+    best_slot = None
+    best_loss = None
+    for slot_info in _build_glyph_plus_slot_defs(glyph_names_list, glyph_p_names_list):
+        if slot_info["plus_name"] in ["无", "", None]:
+            continue
+        temp_glyph_plus_list = _replace_glyph_plus_slot(glyph_p_names_list, slot_info["slot_index"], "无")
+        temp_final_state = _recalculate_glyph_final_state(job, player_state, equipment_state, glyph_names_list,
+                                                          temp_glyph_plus_list, rune_state, skin_state, surplus_state,
+                                                          others_state, skill_state, association_state, card_state,
+                                                          expedition_part, player_level, core_rune_info)
+        score_now = score_func(temp_final_state)
+        loss = base_score - score_now
+        if best_loss is None or loss < best_loss:
+            best_slot = slot_info
+            best_loss = loss
+    return best_slot, best_loss
+
+
+def _get_glyph_replacement_results(job,
+                                   player_state,
+                                   equipment_state,
+                                   glyph_names_list,
+                                   glyph_p_names_list,
+                                   expedition_part,
+                                   rune_state,
+                                   skin_state,
+                                   surplus_state,
+                                   others_state,
+                                   skill_state,
+                                   association_state,
+                                   card_state,
+                                   player_level,
+                                   core_rune_info,
+                                   score_func,
+                                   base_score,
+                                   glyph_candidates):
+    """计算三属性纹章单槽替换收益。"""
+    target_slot, _ = _find_least_valuable_glyph_slot(job, player_state, equipment_state, glyph_names_list,
+                                                     glyph_p_names_list, expedition_part, rune_state, skin_state,
+                                                     surplus_state, others_state, skill_state, association_state,
+                                                     card_state, player_level, core_rune_info, score_func, base_score)
+    if not target_slot:
+        return [], None
+
+    target_level = target_slot["level"]
+    if target_level not in glyph_json.get("plus", {}):
+        return [], target_slot
+
+    res_list = []
+    for stat_name, label in glyph_candidates.items():
+        if stat_name not in glyph_json["plus"][target_level]:
+            continue
+        temp_glyph_plus_list = _replace_glyph_plus_slot(glyph_p_names_list, target_slot["slot_index"], stat_name)
+        temp_final_state = _recalculate_glyph_final_state(job, player_state, equipment_state, glyph_names_list,
+                                                          temp_glyph_plus_list, rune_state, skin_state, surplus_state,
+                                                          others_state, skill_state, association_state, card_state,
+                                                          expedition_part, player_level, core_rune_info)
+        score_now = score_func(temp_final_state)
+        increase = round((score_now - base_score) / base_score * 100, 2)
+        if increase != 0:
+            res_list.append((increase, label))
+    return res_list, target_slot
+
+
+def _recalculate_final_state(job,
+                             player_state,
+                             equipment_state,
+                             glyph_state,
+                             temp_rune_list,
+                             skin_state,
+                             surplus_state,
+                             others_state,
+                             skill_state,
+                             association_state,
+                             card_state,
+                             player_level,
+                             core_rune_info):
+    temp_rune_state = rune_func(temp_rune_list)
+    return state_calculate(job, player_state, equipment_state, glyph_state, temp_rune_state,
+                           skin_state, surplus_state, others_state, skill_state, association_state,
+                           card_state, player_level=player_level, core_rune_info=core_rune_info)
+
+
+def _find_least_valuable_rune_slot(job,
+                                   player_state,
+                                   equipment_state,
+                                   glyph_state,
+                                   rune_list,
+                                   rune_board_levels,
+                                   skin_state,
+                                   surplus_state,
+                                   others_state,
+                                   skill_state,
+                                   association_state,
+                                   card_state,
+                                   player_level,
+                                   core_rune_info,
+                                   score_func,
+                                   base_score,
+                                   rune_type):
+    """找到当前收益最低的已装备石板词条。"""
+    best_slot = None
+    best_loss = None
+    for slot_info in _build_rune_slot_defs(rune_list, rune_board_levels, rune_type):
+        if slot_info["name"] in ["无", "", None] or slot_info["value"] in ["无", "", None]:
+            continue
+        temp_rune_list = _replace_rune_slot(rune_list, slot_info["slot_index"], "无", "无")
+        temp_final_state = _recalculate_final_state(job, player_state, equipment_state, glyph_state, temp_rune_list,
+                                                    skin_state, surplus_state, others_state, skill_state,
+                                                    association_state, card_state, player_level, core_rune_info)
+        score_now = score_func(temp_final_state)
+        loss = base_score - score_now
+        if best_loss is None or loss < best_loss:
+            best_slot = slot_info
+            best_loss = loss
+    return best_slot, best_loss
+
+
+def _get_rune_replacement_results(job,
+                                  player_state,
+                                  equipment_state,
+                                  glyph_state,
+                                  rune_list,
+                                  rune_board_levels,
+                                  skin_state,
+                                  surplus_state,
+                                  others_state,
+                                  skill_state,
+                                  association_state,
+                                  card_state,
+                                  player_level,
+                                  core_rune_info,
+                                  score_func,
+                                  base_score,
+                                  rune_candidates,
+                                  rune_type):
+    """计算石板单槽替换收益。"""
+    target_slot, _ = _find_least_valuable_rune_slot(job, player_state, equipment_state, glyph_state, rune_list,
+                                                    rune_board_levels, skin_state, surplus_state, others_state,
+                                                    skill_state, association_state, card_state, player_level,
+                                                    core_rune_info, score_func, base_score, rune_type)
+    if not target_slot:
+        return [], None
+
+    tier_idx, current_values = _get_rune_value_tier(target_slot["level"], rune_type, target_slot["name"], target_slot["value"])
+    if tier_idx is None or current_values is None:
+        return [], target_slot
+
+    res_list = []
+    for stat_name, label in rune_candidates.items():
+        try:
+            candidate_values = rune_json[str(target_slot["level"])][rune_type][stat_name]
+        except Exception:
+            continue
+        if not isinstance(candidate_values, list) or not candidate_values:
+            continue
+        candidate_idx = min(tier_idx, len(candidate_values) - 1)
+        candidate_value = candidate_values[candidate_idx]
+        temp_rune_list = _replace_rune_slot(rune_list, target_slot["slot_index"], stat_name, candidate_value)
+        temp_final_state = _recalculate_final_state(job, player_state, equipment_state, glyph_state, temp_rune_list,
+                                                    skin_state, surplus_state, others_state, skill_state,
+                                                    association_state, card_state, player_level, core_rune_info)
+        score_now = score_func(temp_final_state)
+        increase = round((score_now - base_score) / base_score * 100, 2)
+        if increase != 0:
+            res_list.append((increase, label))
+    return res_list, target_slot
 
 
 def _parse_core_rune_value(raw_val):
@@ -176,11 +516,16 @@ def state_calculate(job,
                     player_level="50",
                     core_rune_info=None):
     """ 计算 """
+    try:
+        level_int = int(player_level)
+    except Exception:
+        level_int = 50
+
     res_state_dict = {"力量": 0, "敏捷": 0, "智力": 0, "体质": 0,
                       "HP": 0, "MP": 0, "MP恢复": 0, "移速": 0,
                       "最小物攻": 0, "最大物攻": 0, "最小魔攻": 0, "最大魔攻": 0,
-                      "防御": 0, "魔防": 0, "致命": 0, "最终": 0,
-                      "防御百分比": 0, "魔防百分比": 0, "致命百分比": 0, "最终百分比": 0,
+                      "防御": 0, "魔防": 0, "致命": 0, "致命伤害": 0, "最终": 0,
+                      "防御百分比": 0, "魔防百分比": 0, "致命百分比": 0, "致命伤害百分比": 0, "最终百分比": 0,
                       "火攻%": 0, "水攻%": 0, "光攻%": 0, "暗攻%": 0,
                       "火防%": 0, "水防%": 0, "光防%": 0, "暗防%": 0,
                       "眩晕": 0, "眩晕抵抗": 0, "硬直": 0, "硬直抵抗": 0,
@@ -192,7 +537,7 @@ def state_calculate(job,
                       "最小物攻": 0, "最大物攻": 0, "最小魔攻": 0, "最大魔攻": 0,
                       "最小物攻%": 0, "最大物攻%": 0, "最小魔攻%": 0, "最大魔攻%": 0,
                       "物攻": 0, "魔攻": 0, "物攻%": 0, "魔攻%": 0,
-                      "防御": 0, "魔防": 0, "致命": 0, "最终": 0,
+                      "防御": 0, "魔防": 0, "致命": 0, "致命伤害": 0, "致命伤害%": 0, "最终": 0,
                       "防御%": 0, "魔防%": 0, "致命%": 0, "致命面板%": 0,
                       "火攻%": 0, "水攻%": 0, "光攻%": 0, "暗攻%": 0,
                       "火防%": 0, "水防%": 0, "光防%": 0, "暗防%": 0,
@@ -241,6 +586,8 @@ def state_calculate(job,
             calculate_dict["MP恢复"] += 50 * val
             continue
         for state_name_now, state_rate_now in val.items():
+            if state_name_now == "致命伤害" and level_int < 61:
+                continue
             calculate_dict[state_name_now] += int(calculate_dict[base_name_now] * state_rate_now)
 
     # 计算百分比加成
@@ -265,8 +612,15 @@ def state_calculate(job,
                             "物攻": 0, "魔攻": 0, "物攻%": 0, "魔攻%": 0,
                             "致命": 0, "致命面板%": 0, "眩晕面板%": 0,
                             "光攻%": 0, "暗攻%": 0, "火攻%": 0, "水攻%": 0,
-                            "力量转魔攻%": 0, "智力转物攻%": 0}
+                            "力量转魔攻%": 0, "智力转物攻%": 0,
+                            "查克拉治愈术基础攻%": 0, "查克拉治愈术上限攻%": 0}
     calculate_skill_dict = add_dicts([calculate_skill_dict, skill_state])
+    if calculate_skill_dict["查克拉治愈术基础攻%"] > 0:
+        chakra_bonus = min(calculate_skill_dict["查克拉治愈术基础攻%"] +
+                           int(calculate_dict["最终"] / 100) * 0.015,
+                           calculate_skill_dict["查克拉治愈术上限攻%"])
+        calculate_skill_dict["物攻%"] += chakra_bonus
+        calculate_skill_dict["魔攻%"] += chakra_bonus
     # 计算审判力量加成
     calculate_skill_dict["物攻"] += calculate_dict["智力"] * calculate_skill_dict["智力转物攻%"]
     calculate_skill_dict["魔攻"] += calculate_dict["力量"] * calculate_skill_dict["力量转魔攻%"]
@@ -293,14 +647,13 @@ def state_calculate(job,
                 res_state_dict[key] = calculate_dict[key]
 
     # 修改: 使用按等级的百分比计算
-    try:
-        level_int = int(player_level)
-    except Exception:
-        level_int = 50
     res_state_dict["防御百分比"] = calculate_defense_percent(res_state_dict["防御"], player_level=level_int)
     res_state_dict["魔防百分比"] = calculate_defense_percent(res_state_dict["魔防"], player_level=level_int)
     res_state_dict["致命百分比"] = min(calculate_critical_percent(res_state_dict["致命"], player_level=level_int) + \
                                   calculate_dict["致命面板%"] * 100, 90)
+    res_state_dict["致命伤害百分比"] = calculate_critical_damage_percent(
+        res_state_dict["致命伤害"], player_level=level_int
+    ) + round(calculate_dict["致命伤害%"] * 100, 3)
     res_state_dict["最终百分比"] = calculate_final_atk_percent(res_state_dict["最终"], player_level=level_int)
 
     return res_state_dict
@@ -310,6 +663,11 @@ def dps_increase_calculate(job,
                            player_state,
                            equipment_state,
                            glyph_state,
+                           glyph_names_list,
+                           glyph_p_names_list,
+                           expedition_part,
+                           rune_list,
+                           rune_board_levels,
                            rune_state,
                            skin_state,
                            surplus_state,
@@ -323,44 +681,71 @@ def dps_increase_calculate(job,
                            core_rune_info=None):
     """ 计算攻击属性收益 """
     glyph_plus_dict = {"最大物攻": "三属性物攻", "最大魔攻": "三属性魔攻", "致命": "三属性致命",
+                       "致命伤害": "三属性致命伤害",
                        "力量": "三属性力量", "敏捷": "三属性敏捷", "智力": "三属性智力", "最终": "三属性最终"}
     rune_dict = {"物攻": "石板物攻", "魔攻": "石板魔攻", "致命": "石板致命",
                  "力量": "石板力量", "敏捷": "石板敏捷", "智力": "石板智力",
                  "最终": "石板最终"}
+    combat_dps_list, analysis_mode, replace_slot = _split_dps_analysis_inputs(dps_list)
 
-    ori_dps = dps_func(list(dps_list) + [final_state])
+    ori_dps = dps_func(list(combat_dps_list) + [final_state])
 
     res_dps_list = []
 
-    for key, val in glyph_plus_dict.items():
-        tmp_state = add_dicts([others_state, glyph_json["plus"][player_level + "A"][key]])
-        tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
-                                          skin_state, surplus_state, tmp_state, skill_state, association_state,
-                                          card_state, player_level=player_level, core_rune_info=core_rune_info)
-        dps_now = dps_func(list(dps_list) + [tmp_final_state])
-        res_dps_list.append((round((dps_now - ori_dps) / ori_dps * 100, 2), val))
-
-    for key, val in rune_dict.items():
-        # 旧结构: rune_json["atk"][key] ; 新结构: rune_json[level]["atk"][key]
-        rune_val = _rune_max_value(key)
-        if rune_val <= 0:
-            continue
-        tmp_state = add_dicts([others_state, {key: rune_val}])
-        tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
-                                          skin_state, surplus_state, tmp_state, skill_state, association_state,
-                                          card_state, player_level=player_level, core_rune_info=core_rune_info)
-        dps_now = dps_func(list(dps_list) + [tmp_final_state])
-        res_dps_list.append((round((dps_now - ori_dps) / ori_dps * 100, 2), val))
+    target_slot = None
+    if analysis_mode == "单槽替换" and replace_slot == "三属性纹章":
+        res_glyph_list, target_slot = _get_glyph_replacement_results(
+            job, player_state, equipment_state, glyph_names_list, glyph_p_names_list, expedition_part,
+            rune_state, skin_state, surplus_state, others_state, skill_state, association_state, card_state,
+            player_level, core_rune_info,
+            lambda st: dps_func(list(combat_dps_list) + [st]),
+            ori_dps, glyph_plus_dict
+        )
+        res_dps_list.extend(res_glyph_list)
+    elif analysis_mode == "单槽替换" and replace_slot == "石板词条":
+        res_rune_list, target_slot = _get_rune_replacement_results(
+            job, player_state, equipment_state, glyph_state, rune_list, rune_board_levels,
+            skin_state, surplus_state, others_state, skill_state, association_state, card_state,
+            player_level, core_rune_info,
+            lambda st: dps_func(list(combat_dps_list) + [st]),
+            ori_dps, rune_dict, "atk"
+        )
+        res_dps_list.extend(res_rune_list)
+    else:
+        for key, val in glyph_plus_dict.items():
+            glyph_level_key = _glyph_level_key(player_level)
+            if key not in glyph_json["plus"].get(glyph_level_key, {}):
+                continue
+            tmp_state = add_dicts([others_state, glyph_json["plus"][glyph_level_key][key]])
+            tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
+                                              skin_state, surplus_state, tmp_state, skill_state, association_state,
+                                              card_state, player_level=player_level, core_rune_info=core_rune_info)
+            dps_now = dps_func(list(combat_dps_list) + [tmp_final_state])
+            res_dps_list.append((round((dps_now - ori_dps) / ori_dps * 100, 2), val))
+        for key, val in rune_dict.items():
+            rune_val = _rune_max_value(key)
+            if rune_val <= 0:
+                continue
+            tmp_state = add_dicts([others_state, {key: rune_val}])
+            tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
+                                              skin_state, surplus_state, tmp_state, skill_state, association_state,
+                                              card_state, player_level=player_level, core_rune_info=core_rune_info)
+            dps_now = dps_func(list(combat_dps_list) + [tmp_final_state])
+            res_dps_list.append((round((dps_now - ori_dps) / ori_dps * 100, 2), val))
 
     # 输出格式规整
     # res_dps_text = f"您面对【{dps_list[-1]}】使用【{dps_list[1]}】属性【{dps_list[0]}】技能的战斗力竟然高达【{ori_dps}】! ! !"
-    res_dps_text = f"您面对【{dps_list[-1]}】使用\n"
-    for (atk_type1_now, atk_type2_now, atk_num1_now) in [(dps_list[0], dps_list[1], dps_list[2]),
-                                                         (dps_list[5], dps_list[6], dps_list[7]),
-                                                         (dps_list[10], dps_list[11], dps_list[12])]:
+    res_dps_text = f"您面对【{combat_dps_list[-1]}】使用\n"
+    for (atk_type1_now, atk_type2_now, atk_num1_now) in [(combat_dps_list[0], combat_dps_list[1], combat_dps_list[2]),
+                                                         (combat_dps_list[5], combat_dps_list[6], combat_dps_list[7]),
+                                                         (combat_dps_list[10], combat_dps_list[11], combat_dps_list[12])]:
         if atk_type1_now != "无" and atk_num1_now > 0:
             res_dps_text += f"【{atk_type2_now}】属性【{atk_type1_now}】\n"
     res_dps_text += f"技能的战斗力竟然高达【{ori_dps}】! ! !"
+    if analysis_mode == "单槽替换" and replace_slot == "石板词条":
+        res_dps_text += "\n石板收益分析按替换【" + _describe_rune_slot(target_slot) + "】计算"
+    elif analysis_mode == "单槽替换" and replace_slot == "三属性纹章":
+        res_dps_text += "\n纹章收益分析按替换【" + _describe_glyph_slot(target_slot) + "】计算"
 
     res_dps_dict_final = {"属性": [], "收益率": []}
     # res_dps_list.sort()
@@ -377,6 +762,11 @@ def def_increase_calculate(job,
                            player_state,
                            equipment_state,
                            glyph_state,
+                           glyph_names_list,
+                           glyph_p_names_list,
+                           expedition_part,
+                           rune_list,
+                           rune_board_levels,
                            rune_state,
                            skin_state,
                            surplus_state,
@@ -397,31 +787,59 @@ def def_increase_calculate(job,
         glyph_plus_dict = {"魔防": "三属性魔防", "体质": "三属性体质", "HP": "三属性HP", "智力": "三属性智力"}
         rune_dict = {"魔防": "石板魔防", "体质": "石板体质", "HP": "石板HP", "智力": "石板智力"}
 
-    ori_def = def_func(list(dps_list) + [final_state, def_type])
+    combat_dps_list, analysis_mode, replace_slot = _split_dps_analysis_inputs(dps_list)
+    ori_def = def_func(list(combat_dps_list) + [final_state, def_type])
 
     res_def_list = []
 
-    for key, val in glyph_plus_dict.items():
-        tmp_state = add_dicts([others_state, glyph_json["plus"][player_level + "A"][key]])
-        tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
-                                          skin_state, surplus_state, tmp_state, skill_state, association_state,
-                                          card_state, player_level=player_level, core_rune_info=core_rune_info)
-        def_now = def_func(list(dps_list) + [tmp_final_state, def_type])
-        res_def_list.append((round((def_now - ori_def) / ori_def * 100, 2), val))
-
-    for key, val in rune_dict.items():
-        rune_val = _rune_max_value(key)
-        if rune_val <= 0:
-            continue
-        tmp_state = add_dicts([others_state, {key: rune_val}])
-        tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
-                                          skin_state, surplus_state, tmp_state, skill_state, association_state,
-                                          card_state, player_level=player_level, core_rune_info=core_rune_info)
-        def_now = def_func(list(dps_list) + [tmp_final_state, def_type])
-        res_def_list.append((round((def_now - ori_def) / ori_def * 100, 2), val))
+    target_slot = None
+    if analysis_mode == "单槽替换" and replace_slot == "三属性纹章":
+        res_glyph_list, target_slot = _get_glyph_replacement_results(
+            job, player_state, equipment_state, glyph_names_list, glyph_p_names_list, expedition_part,
+            rune_state, skin_state, surplus_state, others_state, skill_state, association_state, card_state,
+            player_level, core_rune_info,
+            lambda st: def_func(list(combat_dps_list) + [st, def_type]),
+            ori_def, glyph_plus_dict
+        )
+        res_def_list.extend(res_glyph_list)
+    elif analysis_mode == "单槽替换" and replace_slot == "石板词条":
+        rune_type = "def"
+        res_rune_list, target_slot = _get_rune_replacement_results(
+            job, player_state, equipment_state, glyph_state, rune_list, rune_board_levels,
+            skin_state, surplus_state, others_state, skill_state, association_state, card_state,
+            player_level, core_rune_info,
+            lambda st: def_func(list(combat_dps_list) + [st, def_type]),
+            ori_def, rune_dict, rune_type
+        )
+        res_def_list.extend(res_rune_list)
+    else:
+        for key, val in glyph_plus_dict.items():
+            glyph_level_key = _glyph_level_key(player_level)
+            if key not in glyph_json["plus"].get(glyph_level_key, {}):
+                continue
+            tmp_state = add_dicts([others_state, glyph_json["plus"][glyph_level_key][key]])
+            tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
+                                              skin_state, surplus_state, tmp_state, skill_state, association_state,
+                                              card_state, player_level=player_level, core_rune_info=core_rune_info)
+            def_now = def_func(list(combat_dps_list) + [tmp_final_state, def_type])
+            res_def_list.append((round((def_now - ori_def) / ori_def * 100, 2), val))
+        for key, val in rune_dict.items():
+            rune_val = _rune_max_value(key)
+            if rune_val <= 0:
+                continue
+            tmp_state = add_dicts([others_state, {key: rune_val}])
+            tmp_final_state = state_calculate(job, player_state, equipment_state, glyph_state, rune_state,
+                                              skin_state, surplus_state, tmp_state, skill_state, association_state,
+                                              card_state, player_level=player_level, core_rune_info=core_rune_info)
+            def_now = def_func(list(combat_dps_list) + [tmp_final_state, def_type])
+            res_def_list.append((round((def_now - ori_def) / ori_def * 100, 2), val))
 
     # 输出格式规整
-    res_def_text = f"您面对【{dps_list[-1]}】的【{def_type}】生存力足足有【{ori_def}】! ! !"
+    res_def_text = f"您面对【{combat_dps_list[-1]}】的【{def_type}】生存力足足有【{ori_def}】! ! !"
+    if analysis_mode == "单槽替换" and replace_slot == "石板词条":
+        res_def_text += "\n石板收益分析按替换【" + _describe_rune_slot(target_slot) + "】计算"
+    elif analysis_mode == "单槽替换" and replace_slot == "三属性纹章":
+        res_def_text += "\n纹章收益分析按替换【" + _describe_glyph_slot(target_slot) + "】计算"
     res_def_dict_final = {"属性": [], "收益率": []}
     # res_dps_list.sort()
     for key, val in res_def_list:
@@ -444,6 +862,7 @@ def get_out_format(job: str, input_dict: dict, player_level: str):
             f"防御: {input_dict['防御']}  ({input_dict['防御百分比']}%)\n" \
             f"魔防: {input_dict['魔防']}  ({input_dict['魔防百分比']}%)"
     text4 = f"致命: {input_dict['致命']}  ({input_dict['致命百分比']}%)\n" \
+            f"致命伤害: {input_dict['致命伤害']}  ({input_dict['致命伤害百分比']}%)\n" \
             f"眩晕: {input_dict['眩晕']}\n硬直: {input_dict['硬直']}\n" \
             f"最终: {input_dict['最终']}  ({input_dict['最终百分比']}%)"
     text5 = f"火攻: {round(input_dict['火攻%'] * 100, 2)}%\n" \
@@ -532,7 +951,10 @@ def main_func(*args):
         # 纹章属性
         glyph_input_combined = list(glyph_base_list) + list(glyph_plus_list)
         check_glyph(glyph_input_combined)
-        glyph_state = glyph_func(glyph_input_combined)
+        glyph_state = glyph_func(glyph_input_combined, player_level=level_now)
+        glyph_names_list = list(glyph_base_list[:11])
+        glyph_p_names_list = list(glyph_plus_list[:11])
+        expedition_part = list(glyph_plus_list[11:])
         # 石板属性
         check_rune(rune_list)
         rune_state = rune_func(rune_list)  # rune_board_levels 仅用于保存/展示，不参与计算
@@ -554,19 +976,22 @@ def main_func(*args):
         # 战斗力/防御收益
         dps_text, dps_increase_df = dps_increase_calculate(job_now,
                                                            player_base_state, equipment_state, glyph_state,
-                                                           rune_state, skin_state, surplus_state,
+                                                           glyph_names_list, glyph_p_names_list, expedition_part,
+                                                           rune_list, rune_board_levels, rune_state, skin_state, surplus_state,
                                                            others_state, skill_state, association_state,
                                                            card_state, final_state, dps_list, player_level=level_now,
                                                            core_rune_info=core_rune_info)
         def_text, def_increase_df = def_increase_calculate(job_now,
                                                            player_base_state, equipment_state, glyph_state,
-                                                           rune_state, skin_state, surplus_state,
+                                                           glyph_names_list, glyph_p_names_list, expedition_part,
+                                                           rune_list, rune_board_levels, rune_state, skin_state, surplus_state,
                                                            others_state, skill_state, association_state,
                                                            card_state, final_state, dps_list, def_type="物防",
                                                            player_level=level_now, core_rune_info=core_rune_info)
         magic_def_text, magic_def_increase_df = def_increase_calculate(job_now,
                                                                         player_base_state, equipment_state, glyph_state,
-                                                                        rune_state, skin_state, surplus_state,
+                                                                        glyph_names_list, glyph_p_names_list, expedition_part,
+                                                                        rune_list, rune_board_levels, rune_state, skin_state, surplus_state,
                                                                         others_state, skill_state, association_state,
                                                                         card_state, final_state, dps_list, def_type="魔防",
                                                                         player_level=level_now,

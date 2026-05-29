@@ -2,7 +2,10 @@
 计算dps
 """
 
-from src.percent_calculate import calculate_critical_percent
+from src.percent_calculate import (
+    calculate_critical_percent,
+    calculate_critical_resist_percent,
+)
 from src.tool_func import boss_json
 
 atk_type_dict = {"光": ["光攻%", "光抗%"],
@@ -33,9 +36,11 @@ def single_dps_func(input_list):
         dps_part2 = (1 + final_state[atk_type_dict[atk_type2][0]]) \
                     * (1 - boss_json[target_boss][atk_type_dict[atk_type2][1]])
 
-    # 计算暴击率乘区
-    dps_part3 = 1 + final_state["致命百分比"] / 100 * \
-                (1 - calculate_critical_percent(boss_json[target_boss]["致命抵抗"]) / 100)
+    # 暴击基础总伤害按 200% 计算，致命伤害用于继续抬高暴击总伤害倍率
+    crit_rate = final_state["致命百分比"] / 100 * \
+        (1 - calculate_critical_resist_percent(boss_json[target_boss]["致命抵抗"]) / 100)
+    crit_damage_bonus = final_state.get("致命伤害百分比", 0) / 100
+    dps_part3 = 1 + crit_rate * (1 + crit_damage_bonus)
 
     # 计算最终乘区
     dps_part4 = 1 + final_state["最终百分比"] / 100 + glyph_plus / 100
@@ -88,6 +93,6 @@ def def_func(input_list):
 
     # 计算暴击抵抗乘区
     def_part2 = 1 + calculate_critical_percent(boss_json[target_boss]["致命"]) / 100 * \
-                (1 - calculate_critical_percent(final_state["致命抵抗"]) / 100)
+                (1 - calculate_critical_resist_percent(final_state["致命抵抗"]) / 100)
 
     return round(final_state["HP"] / def_part1 / def_part2, 2)

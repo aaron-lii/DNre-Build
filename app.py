@@ -13,7 +13,7 @@ from gradio_ui.gr_main import create_main_tab
 from gradio_ui.gr_equipment import create_equipment_tab, update_equipment_options
 from gradio_ui.gr_glyph import create_glyph_tab
 from gradio_ui.gr_rune import create_rune_tab
-from gradio_ui.gr_skin import create_skin_tab
+from gradio_ui.gr_skin import create_skin_tab, update_skin_options
 from gradio_ui.gr_surplus_level import create_surplus_level_tab
 from gradio_ui.gr_others import create_others_tab, update_skill_options
 from gradio_ui.save_load import save_options, load_options, load_options2
@@ -33,12 +33,14 @@ def update_all(job_input):
     """ 更新由于job不同改变的选项 """
     # 对于装备的变更
     change1 = update_equipment_options(job_input)
+    # 对于时装武器/副手的变更
+    change_skin = update_skin_options(job_input)
     # 对于技能的变更
     change2 = update_skill_options(job_input)
     # 对于输出类型的变更
     change3 = update_dps_options(job_input)
 
-    return change1 + change2 + change3
+    return change1 + change_skin + change2 + change3
 
 
 def logo():
@@ -100,7 +102,7 @@ with gr.Blocks(theme="base",
     # 装备页
     equipment_list = create_equipment_tab()
     # 纹章页
-    glyph_base, glyph_plus = create_glyph_tab()
+    glyph_base, glyph_plus, expedition_components = create_glyph_tab()
     # 卡片页
     card_skill_list, card_list = create_card_tab()
     # 石板页
@@ -170,8 +172,7 @@ with gr.Blocks(theme="base",
     load_btn.click(load_options2, outputs=all_input)
     load_btn.click(load_options, inputs=load_file, outputs=all_input)
 
-    job.change(update_all, inputs=[job], outputs=equipment_list[:7] + other_list[5:14] + dps_list[:15])
-
+    job.change(update_all, inputs=[job], outputs=equipment_list[:7] + skin_list[:2] + other_list[5:14] + dps_list[:15])
     demo.add(gr.HTML(custom_html))
 
 if env_now == "exe":

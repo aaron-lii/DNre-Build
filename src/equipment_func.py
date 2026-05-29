@@ -49,7 +49,7 @@ def get_equip_state(job,
 
         # 后缀的处理逻辑
         suffix_now = suffix_names_list[i]
-        state_suffix = equipment_suffix_json[job_now][lv][equip_name_now][suffix_now]
+        state_suffix = equipment_suffix_json[job_now][lv][equip_name_now].get(suffix_now, {})
         state_dict_list.append(state_suffix)
 
         # 强化的处理逻辑
@@ -116,6 +116,8 @@ def get_group_state(group_dict):
     state_dict_list = []
     for group_id, group_num in group_dict.items():
         group_id = str(group_id)
+        if group_id in ["0", ""] or group_id not in equipment_group_json:
+            continue
         if group_num > 1:
             for i in range(2, group_num + 1):
                 if str(i) in equipment_group_json[group_id]["属性"]:

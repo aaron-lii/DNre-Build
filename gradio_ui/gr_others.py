@@ -3,7 +3,7 @@
 """
 import gradio as gr
 
-from src.tool_func import appellation_json, skill_json
+from src.tool_func import appellation_json, collection_json, skill_json
 
 
 
@@ -100,7 +100,8 @@ def create_others_tab():
             appellation_info = gr.TextArea(value="无", label="称号属性预览", lines=4)
         gr.Markdown("### 时装收藏")
         with gr.Row():
-            skin_collections = gr.Slider(minimum=0, maximum=50, value=0, step=1, label="时装收藏数量")
+            collection_max = max([int(k) for k in collection_json.keys()], default=0)
+            skin_collections = gr.Slider(minimum=0, maximum=collection_max, value=0, step=1, label="时装收藏数量")
         gr.Markdown("---")
         gr.Markdown("### 被动技能")
         with gr.Row():

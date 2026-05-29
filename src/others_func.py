@@ -16,11 +16,9 @@ def get_appellation_state(appellation_name):
 def get_collection_state(collection_num):
     """ 统计collection属性 """
     state_dict_list = []
-    collection_json_list = []
-    for i in range(1, 7):
-        collection_json_list.append(collection_json[str(i)])
-    for i in range(collection_num):
-        state_dict_list.append(collection_json_list[i % 6])
+    collection_keys = sorted(collection_json.keys(), key=lambda x: int(x))
+    for key in collection_keys[:int(collection_num)]:
+        state_dict_list.append(collection_json[key])
 
     return add_dicts(state_dict_list)
 

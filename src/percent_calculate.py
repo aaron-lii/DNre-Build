@@ -14,6 +14,24 @@ def calculate_critical_percent(input_num, player_level=50):
     return critical_percent
 
 
+def calculate_critical_resist_percent(input_num, player_level=50):
+    """致命抵抗百分比（PVE）。"""
+    critical_resist_90 = player_common_level_json[str(player_level)]["_CcriticalResistPvE"] * 0.9
+    critical_resist_rate = critical_resist_90 / 90
+
+    critical_resist_percent = min(round(input_num / critical_resist_rate, 1), 90)
+
+    return critical_resist_percent
+
+
+def calculate_critical_damage_percent(input_num, player_level=50):
+    """致命伤害百分比。"""
+    critical_damage_1 = player_common_level_json[str(player_level)]["_CcriticalDamage"]
+    critical_damage_percent = round(input_num / critical_damage_1 * 100, 3)
+
+    return critical_damage_percent
+
+
 def calculate_final_atk_percent(input_num, player_level=50):
     """ 计算最终伤害的百分比 """
     base_damage = player_common_level_json[str(player_level)]["_Cfinaldamage"]

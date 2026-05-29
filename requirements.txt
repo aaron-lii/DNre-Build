@@ -1,2 +1,5 @@
 gradio
 modelscope_studio
+requests
+huggingface_hub<1.0
+eval_type_backport

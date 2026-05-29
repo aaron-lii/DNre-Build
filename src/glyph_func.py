@@ -4,6 +4,61 @@
 from src.tool_func import add_dicts, glyph_json, glyph2_json
 
 
+def _expedition_level_numeric(level_key: str) -> int:
+    digits = ''.join(ch for ch in str(level_key) if ch.isdigit())
+    return int(digits) if digits else 0
+
+
+def _is_multi_level_expedition_data():
+    if not isinstance(glyph2_json, dict) or not glyph2_json:
+        return False
+    first_key = next(iter(glyph2_json.keys()))
+    first_val = glyph2_json[first_key]
+    return isinstance(first_val, dict) and "base" not in first_val and "plus" not in first_val
+
+
+def _get_expedition_level_keys():
+    if not isinstance(glyph2_json, dict) or not glyph2_json:
+        return []
+    if _is_multi_level_expedition_data():
+        return sorted(glyph2_json.keys(), key=_expedition_level_numeric)
+    return ["默认"]
+
+
+def _get_default_expedition_level_key():
+    keys = _get_expedition_level_keys()
+    return keys[-1] if keys else "默认"
+
+
+def _get_expedition_names():
+    if not isinstance(glyph2_json, dict) or not glyph2_json:
+        return []
+    if _is_multi_level_expedition_data():
+        keys = _get_expedition_level_keys()
+        if not keys:
+            return []
+        return list(glyph2_json[keys[0]].keys())
+    return list(glyph2_json.keys())
+
+
+def _get_expedition_level_data(level_key: str):
+    if not isinstance(glyph2_json, dict) or not glyph2_json:
+        return {}
+    if _is_multi_level_expedition_data():
+        if level_key not in glyph2_json:
+            level_key = _get_default_expedition_level_key()
+        return glyph2_json.get(level_key, {})
+    return glyph2_json
+
+
+def _get_expedition_base_labels(glyph_name: str, level_key: str):
+    expedition_data = _get_expedition_level_data(level_key)
+    base_dict = expedition_data.get(glyph_name, {}).get("base", {})
+    if glyph_name == "攻击之远征队纹章":
+        return ["物攻", "魔攻"]
+    return list(base_dict.keys())
+
+
 def get_glyph_state(glyph_names_list,
                     glyph_p_names_list):
     """ 统计普通纹章属性 (原有11条) """
@@ -24,30 +79,22 @@ def get_glyph_state(glyph_names_list,
 
 
 def _parse_expedition(expedition_input_list):
-    """ 解析远征队纹章追加的组件列表 (顺序: 所有 base 数值选择 + 每种一个 plus) """
+    """解析远征队纹章追加的组件列表 (顺序: 每种 = 等级 + base... + plus)。"""
     if not expedition_input_list:
         return {}
     state_dict_list = []
-    expedition_names = list(glyph2_json.keys())
-    # 计算每个 glyph 的 base 属性数量 (考虑攻击之远征队纹章合并为2条)
-    expedition_base_attr_names = []
-    for g_name in expedition_names:
-        base_dict = glyph2_json[g_name]["base"]
-        if g_name == "攻击之远征队纹章":
-            expedition_base_attr_names.append(["物攻", "魔攻"])  # 合并后UI提供
-        else:
-            expedition_base_attr_names.append(list(base_dict.keys()))
-    base_counts = [len(x) for x in expedition_base_attr_names]
-    total_base = sum(base_counts)
-    base_values = expedition_input_list[: total_base]
-    plus_values = expedition_input_list[total_base: ]
-
+    expedition_names = _get_expedition_names()
+    level_keys = _get_expedition_level_keys()
+    default_level_key = _get_default_expedition_level_key()
     cursor = 0
-    for i, glyph_name in enumerate(expedition_names):
-        base_attr_dict = glyph2_json[glyph_name]["base"]
-        attr_name_list = expedition_base_attr_names[i]
+    for glyph_name in expedition_names:
+        level_key = expedition_input_list[cursor] if cursor < len(expedition_input_list) else default_level_key
+        cursor += 1
+        if level_key not in level_keys:
+            level_key = default_level_key
+        attr_name_list = _get_expedition_base_labels(glyph_name, level_key)
         for attr_name in attr_name_list:
-            val_str = base_values[cursor] if cursor < len(base_values) else "无"
+            val_str = expedition_input_list[cursor] if cursor < len(expedition_input_list) else "无"
             cursor += 1
             if val_str in ["无", "", None]:
                 continue
@@ -63,7 +110,8 @@ def _parse_expedition(expedition_input_list):
                     state_dict_list.append({k: val_int})
             else:
                 state_dict_list.append({attr_name: val_int})
-        plus_str = plus_values[i] if i < len(plus_values) else "无"
+        plus_str = expedition_input_list[cursor] if cursor < len(expedition_input_list) else "无"
+        cursor += 1
         if plus_str not in ["无", "", None]:
             try:
                 attr_plus, val_plus = plus_str.rsplit("+", 1)
@@ -81,10 +129,10 @@ def _parse_expedition(expedition_input_list):
     return add_dicts(state_dict_list)
 
 
-def glyph_func(input_list):
+def glyph_func(input_list, player_level: str = "60"):
     """ 主入口 (兼容附加远征队纹章) """
     # 原有结构: 0-10 base 组合, 11-21 plus 三属性
-    # 追加: 远征队 base 数值选择 (合并后11个) + 远征队 plus (4个) 共15个
+    # 追加: 远征队每种 = 等级 + base 数值选择 + plus
     glyph_names = input_list[: 11]
     glyph_p_names = input_list[11: 22]
     expedition_part = input_list[22:]

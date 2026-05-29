@@ -12,11 +12,26 @@ from src.tool_func import boss_json, dps_type_json
 boss_dict = boss_json
 dps_type_dict = dps_type_json
 
+DEFAULT_DPS_OPTIONS = ["物攻", "无", 100, 0, 0,
+                       "无", "无", 0, 0, 0,
+                       "无", "无", 0, 0, 0]
+JOB_DPS_DEFAULTS = {
+    # 刺客系数据缺失时，至少保证职业切换可正常联动。
+    "烈": DEFAULT_DPS_OPTIONS,
+    "影": DEFAULT_DPS_OPTIONS,
+    "曜": DEFAULT_DPS_OPTIONS,
+    "暗": DEFAULT_DPS_OPTIONS,
+}
+
 
 def update_dps_options(job):
+    job_options = dps_type_dict.get(job) or JOB_DPS_DEFAULTS.get(job) or DEFAULT_DPS_OPTIONS
+    if len(job_options) < 15:
+        job_options = job_options + DEFAULT_DPS_OPTIONS[len(job_options):]
+
     res = []
     for i in range(15):
-        res.append(gr.update(value=dps_type_dict[job][i]))
+        res.append(gr.update(value=job_options[i]))
 
     return res
 
@@ -32,6 +47,8 @@ def update_boss_options(boss_input):
 
 def create_dps_tab():
     boss_list = list(boss_dict.keys())
+    analysis_mode_list = ["单槽替换", "固定增量"]
+    replace_slot_list = ["石板词条", "三属性纹章"]
 
     with gr.Tab("战力分析"):
         gr.Markdown("""
@@ -72,7 +89,16 @@ def create_dps_tab():
             target_boss = gr.Dropdown(boss_list, label="BOSS选择")
             boss_state = gr.TextArea(label="BOSS属性预览", lines=4)
 
-    res_list = atk_list + [target_boss]
+        gr.Markdown("""
+        ### 收益分析
+        `单槽替换` 会自动找到当前配装里收益最低的一个对应槽位，再尝试替换成其他属性。
+        `固定增量` 保留旧版算法，直接额外增加一条属性用于对比。
+        """)
+        with gr.Row():
+            analysis_mode = gr.Dropdown(analysis_mode_list, value="单槽替换", label="收益分析模式")
+            replace_slot = gr.Dropdown(replace_slot_list, value="石板词条", label="替换槽位")
+
+    res_list = atk_list + [target_boss, analysis_mode, replace_slot]
 
     target_boss.change(update_boss_options, inputs=[target_boss], outputs=[boss_state])
 

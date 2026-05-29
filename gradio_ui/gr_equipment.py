@@ -2,10 +2,42 @@
 equipment
 """
 import gradio as gr
+import re
 
 from src.tool_func import equipment_base_json, jewelry_json, equipment_enchant_json, equipment_suffix_json, job_info_dict, job_info_dict2, equipment_grade_json
 
 job_now_list = ["无", "无", "无"]
+
+
+def _parse_level_tag(lv: str):
+    """解析装备等级标签，如 40A / 50S / 70L。"""
+    if not lv:
+        return None, None
+    m = re.match(r"^(\d+)([A-Z])$", str(lv))
+    if not m:
+        return None, None
+    return int(m.group(1)), m.group(2)
+
+
+def is_selectable_equipment(lv: str, equip_meta: dict):
+    """仅保留 40 级及以上、A 级及以上、且带套装效果的装备。"""
+    level_num, grade_tag = _parse_level_tag(lv)
+    if level_num is None or grade_tag is None:
+        return False
+    if level_num < 40:
+        return False
+    if grade_tag in {"B", "C"}:
+        return False
+    group_id = str(equip_meta.get("套装", ""))
+    if group_id in {"", "0"}:
+        return False
+    return True
+
+
+def has_suffix_options(job: str, lv: str, equipment_name: str) -> bool:
+    """判断某件装备是否存在可制作的后缀数据。"""
+    suffix_info = equipment_suffix_json.get(job, {}).get(lv, {}).get(equipment_name, {})
+    return isinstance(suffix_info, dict) and bool(suffix_info)
 
 
 def get_base_data():
@@ -17,6 +49,10 @@ def get_base_data():
             base_dict[job] = {}
         for lv, val2 in val.items():
             for equipment_name, val3 in val2.items():
+                if not is_selectable_equipment(lv, val3):
+                    continue
+                if not has_suffix_options(job, lv, equipment_name):
+                    continue
                 part = val3["部位"]
                 if "-" in part:
                     part = part.split("-", 1)[0]
@@ -67,14 +103,29 @@ def get_suffix_data():
     suffix_dict = {}
     data = equipment_suffix_json
 
-    for part, val in equipment_base_dict["战士"].items():
-        for equipment_now in val:
-            lv, equipment_name = equipment_now.split("-", 1)
-            if lv == "50S":
-                if part not in suffix_dict:
-                    suffix_dict[part] = {}
-                suffix_dict[part] = list(data["战士"][lv][equipment_name].keys())
-                break
+    for part in ["主手", "副手", "头盔", "上装", "下装", "手套", "鞋子"]:
+        suffix_list = []
+        seen = set()
+        for job, job_val in data.items():
+            for lv, lv_val in job_val.items():
+                for equipment_name, suffix_map in lv_val.items():
+                    base_meta = equipment_base_json.get(job, {}).get(lv, {}).get(equipment_name)
+                    if not base_meta:
+                        continue
+                    part_now = base_meta.get("部位", "")
+                    if "-" in part_now:
+                        part_now = part_now.split("-", 1)[0]
+                    if part_now != part:
+                        continue
+                    if not is_selectable_equipment(lv, base_meta):
+                        continue
+                    if not isinstance(suffix_map, dict) or not suffix_map:
+                        continue
+                    for suffix_name in suffix_map.keys():
+                        if suffix_name not in seen:
+                            seen.add(suffix_name)
+                            suffix_list.append(suffix_name)
+        suffix_dict[part] = suffix_list
 
     return suffix_dict, data
 
@@ -96,13 +147,15 @@ def update_equipment_options(job):
     choice_lists = []
     for part in ["主手", "副手", "头盔", "上装", "下装", "手套", "鞋子"]:
         star_equipment_list = []
-        for equipment_name in equipment_base_dict[base_job][part]:
+        base_part_equipment = equipment_base_dict.get(base_job, {}).get(part, [])
+        mid_part_equipment = equipment_base_dict.get(mid_job, {}).get(part, [])
+        for equipment_name in base_part_equipment:
             if star_pre in equipment_name:
                 star_equipment_list += [equipment_name + "★", equipment_name + "★★", equipment_name + "★★★"]
 
         choice_lists.append(["无"] + sorted(star_equipment_list +
-                                           equipment_base_dict[mid_job][part] +
-                                           equipment_base_dict[base_job][part]))
+                                           mid_part_equipment +
+                                           base_part_equipment))
 
     res_list = [gr.update(choices=choice_lists[0]),
                 gr.update(choices=choice_lists[1]),

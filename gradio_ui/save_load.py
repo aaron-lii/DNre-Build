@@ -10,6 +10,8 @@ import time
 from src.tool_func import job_info_dict2, job_info_dict, player_base_state_json, rune_json
 from src.tool_func import card_json
 from gradio_ui.gr_equipment import equipment_base_dict  # 用于加载时动态生成装备choices
+from gradio_ui.gr_skin import get_skin_data
+from gradio_ui.gr_glyph import get_default_expedition_level_key, get_expedition_choice_lists, get_expedition_names, get_expedition_field_defs
 
 
 load_data = []
@@ -41,25 +43,25 @@ def get_build_list():
     # 纹章三属性
     for i in range(11):
         res_list.append([f"glyph{i + 1}_p", "无"])
-    # 远征队纹章 (按 glyph2_json 顺序: base 合并后属性各一个下拉 + plus 下拉)
+    # 远征队纹章 (按 glyph2_json 顺序: 每种 = 等级 + base 合并后属性各一个下拉 + plus 下拉)
     try:
-        from src.tool_func import glyph2_json
-        for idx, glyph_name in enumerate(glyph2_json.keys(), start=1):
-            base_dict = glyph2_json[glyph_name]["base"]
-            if glyph_name == "攻击之远征队纹章":
-                # 合并: 物攻 / 魔攻
-                for merged_attr in ["物攻", "魔攻"]:
-                    res_list.append([f"expedition_{idx}_{merged_attr}", "无"])
-            else:
-                for attr in base_dict.keys():
-                    res_list.append([f"expedition_{idx}_{attr}", "无"])
-            res_list.append([f"expedition_{idx}_plus", "无"])  # plus 属性 (内部再合并最小/最大物/魔攻)
+        default_level_key = get_default_expedition_level_key()
+        for idx, glyph_name in enumerate(get_expedition_names(), start=1):
+            field_defs = get_expedition_field_defs(glyph_name, default_level_key)
+            for field_def in field_defs:
+                if field_def["kind"] == "level":
+                    res_list.append([f"expedition_{idx}_level", default_level_key])
+                elif field_def["kind"] == "plus":
+                    res_list.append([f"expedition_{idx}_plus", "无"])
+                else:
+                    res_list.append([f"expedition_{idx}_{field_def['label']}", "无"])
     except Exception:
-        # 兜底结构 (合并后 base=11, plus=4)
-        for i in range(11):
-            res_list.append([f"expedition_base_{i+1}", "无"])
         for i in range(4):
-            res_list.append([f"expedition_plus_{i+1}", "无"])
+            res_list.append([f"expedition_{i+1}_level", "默认"])
+        for i in range(11):
+            res_list.append([f"expedition_base_{i + 1}", "无"])
+        for i in range(4):
+            res_list.append([f"expedition_{i + 1}_plus", "无"])
     # 石板属性
     for i in range(4):
         for j in range(4):
@@ -112,7 +114,8 @@ def get_build_list():
     res_list += [["atk_type1", "物理"], ["atk_type2", "无"], ["atk_num1", 100], ["atk_num2", 0], ["glyph_plus1", 0],
                  ["atk_type3", "无"], ["atk_type4", "无"], ["atk_num3", 0], ["atk_num4", 0], ["glyph_plus3", 0],
                  ["atk_type5", "无"], ["atk_type6", "无"], ["atk_num5", 0], ["atk_num6", 0], ["glyph_plus5", 0],
-                 ["target_boss", "地狱主教-石人胡知诺斯"]]
+                 ["target_boss", "70试炼地狱-新月守护者佩尔守卫者"],
+                 ["analysis_mode", "单槽替换"], ["replace_slot", "石板词条"]]
 
     for i in range(12):
         res_list.append([f"card_skill_{i + 1}", 0])
@@ -194,6 +197,17 @@ def load_options(input_file_path):
 
     # 先根据存档内的job生成装备choices，避免第一次加载时报错
     res_val = []
+    expedition_names = get_expedition_names()
+    expedition_level_values = []
+    expedition_level_idx = 0
+    for key, value in zip([item[0] for item in default_list], load_data):
+        if key.startswith("expedition_") and key.endswith("_level"):
+            expedition_level_values.append(value)
+            expedition_level_idx += 1
+    if not expedition_level_values:
+        expedition_level_values = [get_default_expedition_level_key()] * len(expedition_names)
+    expedition_choice_lists = get_expedition_choice_lists(expedition_level_values)
+    expedition_choice_index = 0
     # job 索引为1 (因为0是level)
     job_val = load_data[1]
     # 装备索引 2-8
@@ -207,16 +221,21 @@ def load_options(input_file_path):
             choice_lists = []
             for part in part_order:
                 star_equipment_list = []
-                for equipment_name in equipment_base_dict[base_job][part]:
+                base_part_equipment = equipment_base_dict.get(base_job, {}).get(part, [])
+                mid_part_equipment = equipment_base_dict.get(mid_job, {}).get(part, [])
+                for equipment_name in base_part_equipment:
                     if star_pre in equipment_name:
                         star_equipment_list += [equipment_name + "★", equipment_name + "★★", equipment_name + "★★★"]
                 choice_lists.append(["无"] + sorted(star_equipment_list +
-                                                 equipment_base_dict[mid_job][part] +
-                                                 equipment_base_dict[base_job][part]))
+                                                 mid_part_equipment +
+                                                 base_part_equipment))
+            skin_choice_lists = get_skin_data(job_val)
         except Exception:
             choice_lists = [["无"]] * 7
+            skin_choice_lists = [["无"], ["无"]]
     else:
         choice_lists = [["无"]] * 7
+        skin_choice_lists = [["无"], ["无"]]
 
     # 构建输出 updates
     for i in range(len(load_data)):
@@ -228,6 +247,22 @@ def load_options(input_file_path):
             res_val.append(gr.update(value=load_data[i]))
         elif i in equipment_indices:
             res_val.append(gr.update(value=load_data[i], choices=choice_lists[i - 2]))
+        elif default_list[i][0] == "weapon1_skin":
+            value_now = load_data[i] if load_data[i] in skin_choice_lists[0] else "无"
+            res_val.append(gr.update(value=value_now, choices=skin_choice_lists[0]))
+        elif default_list[i][0] == "weapon2_skin":
+            value_now = load_data[i] if load_data[i] in skin_choice_lists[1] else "无"
+            res_val.append(gr.update(value=value_now, choices=skin_choice_lists[1]))
+        elif default_list[i][0].startswith("expedition_"):
+            if expedition_choice_index < len(expedition_choice_lists):
+                choices_now = expedition_choice_lists[expedition_choice_index]
+                expedition_choice_index += 1
+            else:
+                choices_now = ["无"]
+            value_now = load_data[i] if load_data[i] in choices_now else "无"
+            if default_list[i][0].endswith("_level") and "无" not in choices_now:
+                value_now = load_data[i] if load_data[i] in choices_now else choices_now[0]
+            res_val.append(gr.update(value=value_now, choices=choices_now))
         else:
             res_val.append(gr.update(value=load_data[i]))
 
