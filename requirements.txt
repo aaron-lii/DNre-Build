@@ -1,4 +1,4 @@
-gradio
+gradio==5.20.1
 modelscope_studio
 requests
 huggingface_hub<1.0

@@ -29,6 +29,15 @@ from src.tool_func import get_my_path, version, env_now
 warnings.filterwarnings("ignore", message=".*not in the list of choices.*", category=UserWarning)
 
 
+def _gradio_major_version() -> int:
+    """兼容 gradio 5.x / 6.x 的参数差异。"""
+    version_text = getattr(gr, "__version__", "5")
+    try:
+        return int(str(version_text).split(".", 1)[0])
+    except Exception:
+        return 5
+
+
 def update_all(job_input):
     """ 更新由于job不同改变的选项 """
     # 对于装备的变更
@@ -88,11 +97,15 @@ custom_html = """
 </div>
 """
 
+gradio_major_version = _gradio_major_version()
+
+blocks_kwargs = {"title": "DNre配装器"}
+if gradio_major_version < 6:
+    blocks_kwargs["theme"] = "base"
+    blocks_kwargs["css"] = custom_css
+
 # Gradio 界面
-with gr.Blocks(theme="base",
-               css=custom_css,
-               title="DNre配装器",
-               ) as demo:
+with gr.Blocks(**blocks_kwargs) as demo:
     # gr.Markdown('# ![Logo](data/logo.ico) DN怀旧服 50级配装模拟器v0.1')
     with ms.Application():
         logo()
@@ -182,11 +195,16 @@ if env_now == "exe":
 else:
     port_now = None
 
-demo.launch(
-    # server_name="0.0.0.0",
-    server_port=port_now,
-    favicon_path=get_my_path("data/logo2.ico"),
-    max_file_size="10kb",
-    show_api=False,
-    share=False,
-    inbrowser=True)
+launch_kwargs = {
+    "server_port": port_now,
+    "favicon_path": get_my_path("data/logo2.ico"),
+    "max_file_size": "10kb",
+    "show_api": False,
+    "share": False,
+    "inbrowser": True,
+}
+if gradio_major_version >= 6:
+    launch_kwargs["theme"] = "base"
+    launch_kwargs["css"] = custom_css
+
+demo.launch(**launch_kwargs)
