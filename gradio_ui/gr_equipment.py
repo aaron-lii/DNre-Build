@@ -26,6 +26,8 @@ def is_selectable_equipment(lv: str, equip_meta: dict):
         return False
     if level_num < 40:
         return False
+    if level_num == 70 and grade_tag in {"S", "L"}:
+        return False
     if grade_tag in {"B", "C"}:
         return False
     group_id = str(equip_meta.get("套装", ""))
@@ -46,6 +48,8 @@ def is_selectable_jewelry(lv: str, jewelry_meta: dict):
     if level_num is None or grade_tag is None:
         return False
     if level_num < 40:
+        return False
+    if level_num == 70 and grade_tag in {"S", "L"}:
         return False
     if grade_tag in {"B", "C"}:
         return False
