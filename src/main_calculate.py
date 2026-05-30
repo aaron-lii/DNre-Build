@@ -853,6 +853,7 @@ def def_increase_calculate(job,
 
 
 def get_out_format(job: str, input_dict: dict, player_level: str):
+    total_critical_damage_percent = round(200 + input_dict["致命伤害百分比"], 3)
     text1 = (f"等级: {str(player_level)}\n职业: {job}\nHP: {input_dict['HP']}\nMP: {input_dict['MP']}\n"
              f"MP恢复: {input_dict['MP恢复']}")
     text2 = f"力量: {input_dict['力量']}\n敏捷: {input_dict['敏捷']}\n" \
@@ -862,7 +863,7 @@ def get_out_format(job: str, input_dict: dict, player_level: str):
             f"防御: {input_dict['防御']}  ({input_dict['防御百分比']}%)\n" \
             f"魔防: {input_dict['魔防']}  ({input_dict['魔防百分比']}%)"
     text4 = f"致命: {input_dict['致命']}  ({input_dict['致命百分比']}%)\n" \
-            f"致命伤害: {input_dict['致命伤害']}  ({input_dict['致命伤害百分比']}%)\n" \
+            f"致命伤害: {input_dict['致命伤害']}  (总{total_critical_damage_percent}%, 额外{input_dict['致命伤害百分比']}%)\n" \
             f"眩晕: {input_dict['眩晕']}\n硬直: {input_dict['硬直']}\n" \
             f"最终: {input_dict['最终']}  ({input_dict['最终百分比']}%)"
     text5 = f"火攻: {round(input_dict['火攻%'] * 100, 2)}%\n" \
