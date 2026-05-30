@@ -40,6 +40,21 @@ def has_suffix_options(job: str, lv: str, equipment_name: str) -> bool:
     return isinstance(suffix_info, dict) and bool(suffix_info)
 
 
+def is_selectable_jewelry(lv: str, jewelry_meta: dict):
+    """仅保留 40 级及以上、A 级及以上、且带套装效果的首饰。"""
+    level_num, grade_tag = _parse_level_tag(lv)
+    if level_num is None or grade_tag is None:
+        return False
+    if level_num < 40:
+        return False
+    if grade_tag in {"B", "C"}:
+        return False
+    group_id = str(jewelry_meta.get("套装", ""))
+    if group_id in {"", "0"}:
+        return False
+    return True
+
+
 def get_base_data():
     """ 获取base数据 """
     base_dict = {}
@@ -71,6 +86,8 @@ def get_jewelry_data():
             jewelry_dict[part] = {}
         for lv, val2 in val1.items():
             for jewelry_name, val3 in val2.items():
+                if not is_selectable_jewelry(lv, val3):
+                    continue
                 name_now = lv + "-" + jewelry_name
                 state_list = []
                 for state_i, val4 in val3["属性"].items():
