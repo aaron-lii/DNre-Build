@@ -10,13 +10,14 @@ from src.tool_func import card_skill_json, card_json
 def get_card_data():
     """ 获取卡片数据 """
     card_skill_list = list(card_skill_json.keys())
+    card_skill_max_list = [len(card_skill_json[name]["数值"]) for name in card_skill_list]
     card_list = list(card_json.keys())
-    return card_skill_list, card_list
+    return card_skill_list, card_skill_max_list, card_list
 
 
 def create_card_tab():
     """ gr页面 (动态技能与卡片数量) """
-    card_skill_list, card_list = get_card_data()
+    card_skill_list, card_skill_max_list, card_list = get_card_data()
 
     card_skill_res_list = []
     card_res_list = []
@@ -26,8 +27,9 @@ def create_card_tab():
         for i in range(len(card_skill_list) // 4):
             with gr.Row():
                 for j in range(4):
-                    card_skill_levle_now = gr.Slider(minimum=0, maximum=20, value=0, step=1,
-                                                     label=card_skill_list[i * 4 + j])
+                    idx = i * 4 + j
+                    card_skill_levle_now = gr.Slider(minimum=0, maximum=card_skill_max_list[idx], value=0, step=1,
+                                                     label=card_skill_list[idx])
                     card_skill_res_list.append(card_skill_levle_now)
 
         gr.Markdown("---")
