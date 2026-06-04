@@ -10,11 +10,33 @@ import time
 from src.tool_func import job_info_dict2, job_info_dict, player_base_state_json, rune_json
 from src.tool_func import card_json
 from gradio_ui.gr_equipment import equipment_base_dict  # 用于加载时动态生成装备choices
-from gradio_ui.gr_skin import get_skin_data
+from gradio_ui.gr_skin import get_skin_data, normalize_skin_selection
 from gradio_ui.gr_glyph import get_default_expedition_level_key, get_expedition_choice_lists, get_expedition_names, get_expedition_field_defs
 
 
 load_data = []
+SKIN_FIELD_TO_CHOICE_INDEX = {
+    "weapon1_skin": 0,
+    "weapon2_skin": 1,
+    "wing_skin": 2,
+    "tail_skin": 3,
+    "printing_skin": 4,
+    "necklace_skin": 5,
+    "earrings_skin": 6,
+    "ring1_skin": 7,
+    "ring2_skin": 7,
+}
+SKIN_FIELD_TO_SKIN_KEY = {
+    "weapon1_skin": "weapon1_skin",
+    "weapon2_skin": "weapon2_skin",
+    "wing_skin": "wing_skin",
+    "tail_skin": "tail_skin",
+    "printing_skin": "printing_skin",
+    "necklace_skin": "necklace_skin",
+    "earrings_skin": "earrings_skin",
+    "ring1_skin": "ring_skin",
+    "ring2_skin": "ring_skin",
+}
 
 
 def get_build_list():
@@ -232,13 +254,14 @@ def load_options(input_file_path):
             skin_choice_lists = get_skin_data(job_val)
         except Exception:
             choice_lists = [["无"]] * 7
-            skin_choice_lists = [["无"], ["无"]]
+            skin_choice_lists = [["无"]] * 8
     else:
         choice_lists = [["无"]] * 7
-        skin_choice_lists = [["无"], ["无"]]
+        skin_choice_lists = [["无"]] * 8
 
     # 构建输出 updates
     for i in range(len(load_data)):
+        key_now = default_list[i][0]
         if i == 0:  # level
             # 等级下拉 choices 就是 player_base_state_json keys
             level_choices = ["请选择等级"] + sorted(player_base_state_json.keys(), key=lambda x: int(x))
@@ -247,20 +270,18 @@ def load_options(input_file_path):
             res_val.append(gr.update(value=load_data[i]))
         elif i in equipment_indices:
             res_val.append(gr.update(value=load_data[i], choices=choice_lists[i - 2]))
-        elif default_list[i][0] == "weapon1_skin":
-            value_now = load_data[i] if load_data[i] in skin_choice_lists[0] else "无"
-            res_val.append(gr.update(value=value_now, choices=skin_choice_lists[0]))
-        elif default_list[i][0] == "weapon2_skin":
-            value_now = load_data[i] if load_data[i] in skin_choice_lists[1] else "无"
-            res_val.append(gr.update(value=value_now, choices=skin_choice_lists[1]))
-        elif default_list[i][0].startswith("expedition_"):
+        elif key_now in SKIN_FIELD_TO_CHOICE_INDEX:
+            skin_key = SKIN_FIELD_TO_SKIN_KEY[key_now]
+            value_now = normalize_skin_selection(job_val, skin_key, load_data[i])
+            res_val.append(gr.update(value=value_now, choices=skin_choice_lists[SKIN_FIELD_TO_CHOICE_INDEX[key_now]]))
+        elif key_now.startswith("expedition_"):
             if expedition_choice_index < len(expedition_choice_lists):
                 choices_now = expedition_choice_lists[expedition_choice_index]
                 expedition_choice_index += 1
             else:
                 choices_now = ["无"]
             value_now = load_data[i] if load_data[i] in choices_now else "无"
-            if default_list[i][0].endswith("_level") and "无" not in choices_now:
+            if key_now.endswith("_level") and "无" not in choices_now:
                 value_now = load_data[i] if load_data[i] in choices_now else choices_now[0]
             res_val.append(gr.update(value=value_now, choices=choices_now))
         else:

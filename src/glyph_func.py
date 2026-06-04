@@ -1,7 +1,7 @@
 """
 计算glyph属性
 """
-from src.tool_func import add_dicts, glyph_json, glyph2_json
+from src.tool_func import add_dicts, glyph_json, glyph2_json, glyph_plus_by_glyph_json
 
 
 def _expedition_level_numeric(level_key: str) -> int:
@@ -73,9 +73,17 @@ def get_glyph_state(glyph_names_list,
         # 三属性
         name_p_now = glyph_p_names_list[i]
         if name_p_now not in ["无", ""]:
-            state_dict_list.append(glyph_json["plus"][lv_now][name_p_now])
+            state_dict_list.append(_get_glyph_plus_state(lv_now, name_now, name_p_now))
 
     return add_dicts(state_dict_list)
+
+
+def _get_glyph_plus_state(level_key: str, glyph_name: str, plus_name: str):
+    plus_by_glyph = glyph_plus_by_glyph_json or glyph_json.get("plus_by_glyph", {})
+    glyph_plus_dict = plus_by_glyph.get(level_key, {}).get(glyph_name)
+    if glyph_plus_dict is not None:
+        return glyph_plus_dict.get(plus_name, {})
+    return glyph_json["plus"][level_key].get(plus_name, {})
 
 
 def _parse_expedition(expedition_input_list):
