@@ -8,6 +8,25 @@ from src.tool_func import rune_json, load_json
 
 core_rune_json = load_json("core_rune")
 
+ATK_RUNE_ORDER = ["力量", "敏捷", "智力", "物攻", "魔攻", "致命", "硬直", "眩晕", "最终", "致命伤害"]
+DEF_RUNE_ORDER = ["体质", "防御", "魔防", "HP", "MP", "MP恢复", "硬直抵抗", "致命抵抗", "眩晕抵抗"]
+
+
+def _ordered_rune_names(rune_type: str, level: str = None):
+    """返回石板词条名称，支持按等级过滤，并保持稳定顺序。"""
+    if not isinstance(rune_json, dict):
+        return []
+
+    levels = [str(level)] if level is not None else sorted(rune_json.keys(), key=lambda x: int(x))
+    seen = set()
+    for lvl in levels:
+        seen.update(rune_json.get(lvl, {}).get(rune_type, {}).keys())
+
+    preferred_order = ATK_RUNE_ORDER if rune_type == "atk" else DEF_RUNE_ORDER
+    ordered = [name for name in preferred_order if name in seen]
+    extras = sorted(name for name in seen if name not in preferred_order)
+    return ordered + extras
+
 
 def get_rune_data(default_level: str = None):
     """ 获取石板（攻击/防御）名称列表, 基于指定等级(默认取最小等级) """
@@ -16,8 +35,9 @@ def get_rune_data(default_level: str = None):
         return ["无"], ["无"], []
     if default_level is None or default_level not in level_keys:
         default_level = level_keys[0]
-    atk_names = ["无"] + list(rune_json[default_level]["atk"].keys())
-    def_names = ["无"] + list(rune_json[default_level]["def"].keys())
+    # 初始化时使用全等级并集，避免高等级专属词条在加载存档前就被 choices 拦掉。
+    atk_names = ["无"] + _ordered_rune_names("atk")
+    def_names = ["无"] + _ordered_rune_names("def")
     return atk_names, def_names, level_keys
 
 
@@ -36,11 +56,7 @@ def update_atk_rune(level, rune_name):
     """更新攻击石板 名称下拉(以防等级切换导致可选项变更) 与 数值下拉。"""
     level = str(level)
     # 名称可选项
-    atk_names = ["无"]
-    try:
-        atk_names += list(rune_json[level]["atk"].keys())
-    except Exception:
-        pass
+    atk_names = ["无"] + _ordered_rune_names("atk", level)
     # 若当前名称不在可选项, 重置为"无"
     if rune_name not in atk_names:
         rune_name = atk_names[0]
@@ -51,11 +67,7 @@ def update_atk_rune(level, rune_name):
 def update_def_rune(level, rune_name):
     """更新防御石板 名称与数值。"""
     level = str(level)
-    def_names = ["无"]
-    try:
-        def_names += list(rune_json[level]["def"].keys())
-    except Exception:
-        pass
+    def_names = ["无"] + _ordered_rune_names("def", level)
     if rune_name not in def_names:
         rune_name = def_names[0]
     value_choices = _build_value_choices(level, rune_name, "def")

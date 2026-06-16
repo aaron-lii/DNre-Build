@@ -26,8 +26,6 @@ def is_selectable_equipment(lv: str, equip_meta: dict):
         return False
     if level_num < 40:
         return False
-    if level_num == 70 and grade_tag in {"S", "L"}:
-        return False
     if grade_tag in {"B", "C"}:
         return False
     group_id = str(equip_meta.get("套装", ""))
@@ -43,17 +41,15 @@ def has_suffix_options(job: str, lv: str, equipment_name: str) -> bool:
 
 
 def is_selectable_jewelry(lv: str, jewelry_meta: dict):
-    """保留 40 级及以上、A 级及以上首饰；其中 60A 及以上可无套装直接显示。"""
+    """保留 40 级及以上、A 级及以上首饰；其中 60+ 的 A/S/L 首饰可无套装直接显示。"""
     level_num, grade_tag = _parse_level_tag(lv)
     if level_num is None or grade_tag is None:
         return False
     if level_num < 40:
         return False
-    if level_num == 70 and grade_tag in {"S", "L"}:
-        return False
     if grade_tag in {"B", "C"}:
         return False
-    if level_num >= 60 and grade_tag == "A":
+    if level_num >= 60 and grade_tag in {"A", "S", "L"}:
         return True
     group_id = str(jewelry_meta.get("套装", ""))
     if group_id in {"", "0"}:
