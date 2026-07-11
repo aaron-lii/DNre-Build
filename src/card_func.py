@@ -17,7 +17,8 @@ def get_card_state(card_skills,
         state_dict_list.append(state_now)
     all_state = add_dicts(state_dict_list)
 
-    res_state = {}
+    # 先保留卡片原始属性，再只对存在掌握之力的属性套用倍率。
+    res_state = dict(all_state)
     for i in range(len(card_skills)):
         state_name = card_skill_json[card_skill_list[i]]["属性"]
         if card_skills[i] == 0:
