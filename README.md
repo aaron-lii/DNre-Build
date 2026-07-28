@@ -3,7 +3,11 @@
 DN怀旧服配装模拟器<br><br>
 
 ![DNre-Build](https://github.com/aaron-lii/DNre-Build/raw/main/data/logo2.ico)
+
+![爱发电支持一下](https://www.ifdian.net/a/mixixi?utm_source=copylink&utm_medium=link)
+
 </div>
+
 
 ## 项目简介
 
